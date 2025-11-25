@@ -1,13 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Realtime Gold Price (WIB)</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .card {
+    background: #1a1a1a;
+    padding: 20px 24px;
+    border-radius: 12px;
+    width: 360px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 1px solid #222;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    text-align: center;
+  }
+
+  .time {
+    text-align: center;
+    color: #bbb;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .row {
+    margin: 12px 0;
+  }
+
+  .label {
+    color: #aaa;
+    font-size: 13px;
+  }
+
+  .value {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .diff {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .green { color: #4caf50; }
+  .red { color: #ff6b6b; }
+  .neutral { color: #999; }
+
+  .fade {
+    animation: pulse 0.25s ease-out;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1.06); opacity: .2 }
+    to   { transform: scale(1); opacity: 1 }
+  }
+
+  #spread {
+    margin-top: 14px;
+    color: #f0e68c;
+    font-weight: 600;
+    text-align: center;
+  }
+</style>
+</head>
+
+<body>
+<div class="card">
+
+  <h1>Realtime Gold Price</h1>
+  <div id="time" class="time">--:--:--</div>
+
+  <div class="row">
+    <div class="label">Buying Rate</div>
+    <div id="buy" class="value">Loading...</div>
+    <div id="buyDiff" class="diff neutral">(0)</div>
+  </div>
+
+  <div class="row">
+    <div class="label">Selling Rate</div>
+    <div id="sell" class="value">Loading...</div>
+    <div id="sellDiff" class="diff neutral">(0)</div>
+  </div>
+
+  <div id="spread">Spread: -</div>
+
+</div>
+
 <script>
 let lastBuy = null;
 let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
+// Adaptive polling
 let fetchInterval = 1000; // default 1 detik
-let fastFetchCount = 0;   // menghitung detik awal burst
-const FAST_FETCH_LIMIT = 5; // fetch cepat di detik 1-5
+let fastFetchCount = 0;   
+const FAST_FETCH_LIMIT = 5; // detik awal fetch cepat
+let intervalId = null;
 
+// Format jam WIB Asia/Jakarta
 function getJakartaTimeString() {
   const now = new Date();
   return new Intl.DateTimeFormat("en-US", {
@@ -23,78 +130,84 @@ function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-async function load() {
+// Fetch data dari API
+async function fetchGoldData() {
   try {
     const res = await fetch("/api/gold");
     const data = await res.json();
-
-    // Update jam
-    document.getElementById("time").innerText = getJakartaTimeString();
-
-    const buy = parseFloat(data.buying_rate);
-    const sell = parseFloat(data.selling_rate);
-
-    const buyEl = document.getElementById("buy");
-    const buyDiffEl = document.getElementById("buyDiff");
-    buyEl.classList.remove("green", "red", "fade");
-
-    const sellEl = document.getElementById("sell");
-    const sellDiffEl = document.getElementById("sellDiff");
-    sellEl.classList.remove("green", "red", "fade");
-
-    // ===== BUY =====
-    if (lastBuy !== null && buy !== lastBuy) {
-      const diff = buy - lastBuy;
-      lastBuyDiff = diff;
-      if (diff > 0) buyEl.classList.add("green", "fade");
-      else if (diff < 0) buyEl.classList.add("red", "fade");
-    }
-
-    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
-    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
-    else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-
-    buyEl.innerText = formatNumber(buy);
-
-    // ===== SELL =====
-    if (lastSell !== null && sell !== lastSell) {
-      const diff = sell - lastSell;
-      lastSellDiff = diff;
-      if (diff > 0) sellEl.classList.add("green", "fade");
-      else if (diff < 0) sellEl.classList.add("red", "fade");
-    }
-
-    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
-    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
-    else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-
-    sellEl.innerText = formatNumber(sell);
-
-    // ===== SPREAD =====
-    document.getElementById("spread").innerText =
-      "Spread: " + formatNumber(buy - sell);
-
-    lastBuy = buy;
-    lastSell = sell;
-
-    // ==== Adaptive polling ====
-    fastFetchCount++;
-    clearInterval(intervalId);
-    if (fastFetchCount <= FAST_FETCH_LIMIT) {
-      // masih detik awal → fetch cepat tiap 1 detik
-      fetchInterval = 1000;
-    } else {
-      // setelah burst selesai → fetch lebih lambat tiap 5 detik
-      fetchInterval = 5000;
-    }
-    intervalId = setInterval(load, fetchInterval);
-
+    return {
+      buy: parseFloat(data.buying_rate),
+      sell: parseFloat(data.selling_rate)
+    };
   } catch (err) {
-    console.error(err);
+    console.error("Fetch error:", err);
+    return null;
   }
 }
 
-// start
-let intervalId = setInterval(load, fetchInterval);
-load();
+async function updateDisplay() {
+  // Update jam
+  document.getElementById("time").innerText = getJakartaTimeString();
+
+  const newData = await fetchGoldData();
+  if (!newData) return; // skip jika fetch gagal
+
+  const { buy, sell } = newData;
+
+  const buyEl = document.getElementById("buy");
+  const buyDiffEl = document.getElementById("buyDiff");
+  buyEl.classList.remove("green", "red", "fade");
+
+  const sellEl = document.getElementById("sell");
+  const sellDiffEl = document.getElementById("sellDiff");
+  sellEl.classList.remove("green", "red", "fade");
+
+  // ===== BUY =====
+  if (lastBuy !== null && buy !== lastBuy) {
+    const diff = buy - lastBuy;
+    lastBuyDiff = diff;
+    if (diff > 0) buyEl.classList.add("green", "fade");
+    else if (diff < 0) buyEl.classList.add("red", "fade");
+  }
+  if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+  else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
+  else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+  buyEl.innerText = formatNumber(buy);
+
+  // ===== SELL =====
+  if (lastSell !== null && sell !== lastSell) {
+    const diff = sell - lastSell;
+    lastSellDiff = diff;
+    if (diff > 0) sellEl.classList.add("green", "fade");
+    else if (diff < 0) sellEl.classList.add("red", "fade");
+  }
+  if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+  else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+  else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+  sellEl.innerText = formatNumber(sell);
+
+  // ===== SPREAD =====
+  document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
+
+  // Simpan last price
+  lastBuy = buy;
+  lastSell = sell;
+
+  // ==== Adaptive polling ====
+  fastFetchCount++;
+  clearInterval(intervalId);
+  if (fastFetchCount <= FAST_FETCH_LIMIT) {
+    fetchInterval = 1000; // detik awal fetch cepat
+  } else {
+    fetchInterval = 5000; // setelah burst, fetch lebih lambat
+  }
+  intervalId = setInterval(updateDisplay, fetchInterval);
+}
+
+// Start
+updateDisplay();
+intervalId = setInterval(updateDisplay, fetchInterval);
 </script>
+
+</body>
+</html>
