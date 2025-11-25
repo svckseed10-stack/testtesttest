@@ -1,63 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Live Gold Price</title>
-    <style>
-        body { 
-            font-family: Arial; 
-            background: #f6f7f9; 
-            padding: 30px; 
-            display: flex;
-            justify-content: center;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 320px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .price { font-size: 28px; font-weight: bold; }
-        .label { color: #777; font-size: 14px; }
-        .updated { margin-top: 10px; color: #666; }
-    </style>
-</head>
 <body>
+  <h2>Buy Price</h2>
+  <div id="buy">Loading...</div>
 
-<div class="card">
-    <div class="label">Buy Price</div>
-    <div class="price" id="buyPrice">Loading...</div>
+  <h2>Sell Price</h2>
+  <div id="sell">Loading...</div>
 
-    <div class="label" style="margin-top: 15px;">Sell Price</div>
-    <div class="price" id="sellPrice">Loading...</div>
+  <h3 id="updated"></h3>
 
-    <div class="updated">Updated: <span id="updatedAt"></span></div>
-</div>
+  <script>
+    async function loadGold() {
+      try {
+        const res = await fetch('/api/gold');
+        const data = await res.json();
 
-<script>
-function fetchGold() {
-    fetch("/api/gold")
-        .then(res => res.json())
-        .then(json => {
-            const data = json.data;
+        if (!data.products) throw Error("Invalid data");
 
-            document.getElementById("buyPrice").innerHTML =
-                "Rp " + data.buying_rate.toLocaleString();
+        document.getElementById("buy").innerText = data.products[0].sell;
+        document.getElementById("sell").innerText = data.products[0].buy;
+        document.getElementById("updated").innerText = "Updated: " + new Date().toLocaleString();
 
-            document.getElementById("sellPrice").innerHTML =
-                "Rp " + data.selling_rate.toLocaleString();
+      } catch (e) {
+        document.getElementById("buy").innerText = "Error";
+        document.getElementById("sell").innerText = "Error";
+      }
+    }
 
-            document.getElementById("updatedAt").innerHTML = data.updated_at;
-        })
-        .catch(() => {
-            document.getElementById("buyPrice").innerHTML = "Error";
-            document.getElementById("sellPrice").innerHTML = "Error";
-        });
-}
-
-fetchGold();
-setInterval(fetchGold, 5000);
-</script>
-
+    loadGold();
+  </script>
 </body>
 </html>
