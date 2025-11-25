@@ -105,6 +105,8 @@
 <script>
 let lastBuy = null;
 let lastSell = null;
+let lastBuyDiff = 0;
+let lastSellDiff = 0;
 
 // Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
@@ -130,7 +132,7 @@ async function load() {
     // Time WIB
     document.getElementById("time").innerText = getJakartaTimeString();
 
-    // Parse angka, pastikan number
+    // Parse angka
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
@@ -141,15 +143,18 @@ async function load() {
 
     if (lastBuy !== null) {
       const diff = buy - lastBuy;
-      if (diff > 0) {
-        buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(diff)}</span>`;
-        buyEl.classList.add("green", "fade");
-      } else if (diff < 0) {
-        buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(diff)}</span>`;
-        buyEl.classList.add("red", "fade");
-      } else {
-        buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+      if (diff !== 0) {
+        lastBuyDiff = diff; // update hanya jika harga berubah
       }
+    }
+
+    // Tampilkan diff terakhir tetap
+    if (lastBuyDiff > 0) {
+      buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+      buyEl.classList.add("green", "fade");
+    } else if (lastBuyDiff < 0) {
+      buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
+      buyEl.classList.add("red", "fade");
     } else {
       buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
@@ -163,15 +168,18 @@ async function load() {
 
     if (lastSell !== null) {
       const diff = sell - lastSell;
-      if (diff > 0) {
-        sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(diff)}</span>`;
-        sellEl.classList.add("green", "fade");
-      } else if (diff < 0) {
-        sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(diff)}</span>`;
-        sellEl.classList.add("red", "fade");
-      } else {
-        sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+      if (diff !== 0) {
+        lastSellDiff = diff; // update hanya jika harga berubah
       }
+    }
+
+    // Tampilkan diff terakhir tetap
+    if (lastSellDiff > 0) {
+      sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+      sellEl.classList.add("green", "fade");
+    } else if (lastSellDiff < 0) {
+      sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+      sellEl.classList.add("red", "fade");
     } else {
       sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
