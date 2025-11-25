@@ -108,7 +108,7 @@ let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-// Format jam WIB Asia/Jakarta
+// Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
   const now = new Date();
   return new Intl.DateTimeFormat("en-US", {
@@ -124,87 +124,76 @@ function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-// =====================
-// Fungsi fetch data gold
-// =====================
-async function fetchGoldData() {
+async function load() {
   try {
     const res = await fetch("/api/gold");
     const data = await res.json();
-    return {
-      buy: parseFloat(data.buying_rate),
-      sell: parseFloat(data.selling_rate)
-    };
+
+    // Time WIB
+    document.getElementById("time").innerText = getJakartaTimeString();
+
+    // Parse angka
+    const buy = parseFloat(data.buying_rate);
+    const sell = parseFloat(data.selling_rate);
+
+    const buyEl = document.getElementById("buy");
+    const buyDiffEl = document.getElementById("buyDiff");
+    buyEl.classList.remove("green", "red", "fade");
+
+    const sellEl = document.getElementById("sell");
+    const sellDiffEl = document.getElementById("sellDiff");
+    sellEl.classList.remove("green", "red", "fade");
+
+    // ===== BUY =====
+    if (lastBuy !== null && buy !== lastBuy) {
+      const diff = buy - lastBuy;
+      lastBuyDiff = diff;
+      if (diff > 0) buyEl.classList.add("green", "fade");
+      else if (diff < 0) buyEl.classList.add("red", "fade");
+    }
+
+    // Selisih tetap tampil meski harga tidak berubah
+    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
+    else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+
+    buyEl.innerText = formatNumber(buy);
+
+    // ===== SELL =====
+    if (lastSell !== null && sell !== lastSell) {
+      const diff = sell - lastSell;
+      lastSellDiff = diff;
+      if (diff > 0) sellEl.classList.add("green", "fade");
+      else if (diff < 0) sellEl.classList.add("red", "fade");
+    }
+
+    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+    else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+
+    sellEl.innerText = formatNumber(sell);
+
+    // ===== SPREAD =====
+    document.getElementById("spread").innerText =
+      "Spread: " + formatNumber(buy - sell);
+
+    // Save last
+    lastBuy = buy;
+    lastSell = sell;
+
   } catch (err) {
-    console.error("Fetch error:", err);
-    return null;
+    document.getElementById("buy").innerText = "Error";
+    document.getElementById("sell").innerText = "Error";
+    document.getElementById("buyDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("sellDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText = "Spread: -";
+    console.error(err);
   }
 }
 
-// =====================
-// Update tampilan tiap detik
-// =====================
-let cachedData = null;
-
-async function updateDisplay() {
-  // Update jam WIB
-  document.getElementById("time").innerText = getJakartaTimeString();
-
-  // Fetch tiap detik untuk menangkap perubahan 1–7 detik
-  const newData = await fetchGoldData();
-  if (newData) cachedData = newData;
-
-  if (!cachedData) return; // jika fetch gagal, skip
-
-  const { buy, sell } = cachedData;
-
-  // ===== BUY =====
-  const buyEl = document.getElementById("buy");
-  const buyDiffEl = document.getElementById("buyDiff");
-  buyEl.classList.remove("green", "red", "fade");
-
-  if (lastBuy !== null && buy !== lastBuy) {
-    const diff = buy - lastBuy;
-    lastBuyDiff = diff;
-    if (diff > 0) buyEl.classList.add("green", "fade");
-    else if (diff < 0) buyEl.classList.add("red", "fade");
-  }
-
-  if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
-  else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
-  else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-
-  buyEl.innerText = formatNumber(buy);
-
-  // ===== SELL =====
-  const sellEl = document.getElementById("sell");
-  const sellDiffEl = document.getElementById("sellDiff");
-  sellEl.classList.remove("green", "red", "fade");
-
-  if (lastSell !== null && sell !== lastSell) {
-    const diff = sell - lastSell;
-    lastSellDiff = diff;
-    if (diff > 0) sellEl.classList.add("green", "fade");
-    else if (diff < 0) sellEl.classList.add("red", "fade");
-  }
-
-  if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
-  else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
-  else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-
-  sellEl.innerText = formatNumber(sell);
-
-  // ===== SPREAD =====
-  document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
-
-  // Simpan harga terakhir (client-side caching / last price)
-  lastBuy = buy;
-  lastSell = sell;
-}
-
-// Jalankan update tiap detik
-updateDisplay();
-setInterval(updateDisplay, 1000);
+// Run every 1 second
+load();
+setInterval(load, 1000);
 </script>
 
 </body>
