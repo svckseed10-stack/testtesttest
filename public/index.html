@@ -1,114 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Realtime Gold Price (WIB)</title>
-
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-  }
-
-  .card {
-    background: #1a1a1a;
-    padding: 20px 24px;
-    border-radius: 12px;
-    width: 360px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    border: 1px solid #222;
-  }
-
-  h1 {
-    font-size: 18px;
-    margin: 0 0 10px 0;
-    text-align: center;
-  }
-
-  .time {
-    text-align: center;
-    color: #bbb;
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-
-  .row {
-    margin: 12px 0;
-  }
-
-  .label {
-    color: #aaa;
-    font-size: 13px;
-  }
-
-  .value {
-    font-size: 22px;
-    font-weight: 700;
-  }
-
-  .diff {
-    font-size: 12px;
-    margin-top: 4px;
-  }
-
-  .green { color: #4caf50; }
-  .red { color: #ff6b6b; }
-  .neutral { color: #999; }
-
-  .fade {
-    animation: pulse 0.25s ease-out;
-  }
-
-  @keyframes pulse {
-    from { transform: scale(1.06); opacity: .2 }
-    to   { transform: scale(1); opacity: 1 }
-  }
-
-  #spread {
-    margin-top: 14px;
-    color: #f0e68c;
-    font-weight: 600;
-    text-align: center;
-  }
-</style>
-</head>
-
-<body>
-<div class="card">
-
-  <h1>Realtime Gold Price</h1>
-  <div id="time" class="time">--:--:--</div>
-
-  <div class="row">
-    <div class="label">Buying Rate</div>
-    <div id="buy" class="value">Loading...</div>
-    <div id="buyDiff" class="diff neutral">(0)</div>
-  </div>
-
-  <div class="row">
-    <div class="label">Selling Rate</div>
-    <div id="sell" class="value">Loading...</div>
-    <div id="sellDiff" class="diff neutral">(0)</div>
-  </div>
-
-  <div id="spread">Spread: -</div>
-
-</div>
-
 <script>
 let lastBuy = null;
 let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-// Format jam WIB Asia/Jakarta (AM/PM)
+let fetchInterval = 1000; // default 1 detik
+let fastFetchCount = 0;   // menghitung detik awal burst
+const FAST_FETCH_LIMIT = 5; // fetch cepat di detik 1-5
+
 function getJakartaTimeString() {
   const now = new Date();
   return new Intl.DateTimeFormat("en-US", {
@@ -129,10 +28,9 @@ async function load() {
     const res = await fetch("/api/gold");
     const data = await res.json();
 
-    // Time WIB
+    // Update jam
     document.getElementById("time").innerText = getJakartaTimeString();
 
-    // Parse angka
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
@@ -152,7 +50,6 @@ async function load() {
       else if (diff < 0) buyEl.classList.add("red", "fade");
     }
 
-    // Selisih tetap tampil meski harga tidak berubah
     if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
     else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
     else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
@@ -177,24 +74,27 @@ async function load() {
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
-    // Save last
     lastBuy = buy;
     lastSell = sell;
 
+    // ==== Adaptive polling ====
+    fastFetchCount++;
+    clearInterval(intervalId);
+    if (fastFetchCount <= FAST_FETCH_LIMIT) {
+      // masih detik awal → fetch cepat tiap 1 detik
+      fetchInterval = 1000;
+    } else {
+      // setelah burst selesai → fetch lebih lambat tiap 5 detik
+      fetchInterval = 5000;
+    }
+    intervalId = setInterval(load, fetchInterval);
+
   } catch (err) {
-    document.getElementById("buy").innerText = "Error";
-    document.getElementById("sell").innerText = "Error";
-    document.getElementById("buyDiff").innerHTML = `<span class="neutral">(0)</span>`;
-    document.getElementById("sellDiff").innerHTML = `<span class="neutral">(0)</span>`;
-    document.getElementById("spread").innerText = "Spread: -";
     console.error(err);
   }
 }
 
-// Run every 1 second
+// start
+let intervalId = setInterval(load, fetchInterval);
 load();
-setInterval(load, 1000);
 </script>
-
-</body>
-</html>
