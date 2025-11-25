@@ -109,28 +109,25 @@ let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
 // Adaptive polling
-let fetchInterval = 1000; // default 1 detik
-let fastFetchCount = 0;   
-const FAST_FETCH_LIMIT = 5; // detik awal fetch cepat
+let fastFetchCount = 0;
+const FAST_FETCH_LIMIT = 5; // detik awal burst
 let intervalId = null;
 
-// Format jam WIB Asia/Jakarta
-function getJakartaTimeString() {
-  const now = new Date();
-  return new Intl.DateTimeFormat("en-US", {
+// Update jam WIB tiap detik (selalu realtime)
+setInterval(() => {
+  document.getElementById("time").innerText = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
     timeZone: "Asia/Jakarta"
-  }).format(now);
-}
+  }).format(new Date());
+}, 1000);
 
 function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-// Fetch data dari API
 async function fetchGoldData() {
   try {
     const res = await fetch("/api/gold");
@@ -146,11 +143,8 @@ async function fetchGoldData() {
 }
 
 async function updateDisplay() {
-  // Update jam
-  document.getElementById("time").innerText = getJakartaTimeString();
-
   const newData = await fetchGoldData();
-  if (!newData) return; // skip jika fetch gagal
+  if (!newData) return;
 
   const { buy, sell } = newData;
 
@@ -189,24 +183,26 @@ async function updateDisplay() {
   // ===== SPREAD =====
   document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
 
-  // Simpan last price
+  // simpan last
   lastBuy = buy;
   lastSell = sell;
 
   // ==== Adaptive polling ====
   fastFetchCount++;
-  clearInterval(intervalId);
+  clearTimeout(intervalId);
+
+  let nextInterval;
   if (fastFetchCount <= FAST_FETCH_LIMIT) {
-    fetchInterval = 1000; // detik awal fetch cepat
+    nextInterval = 500; // burst 0.5 detik
   } else {
-    fetchInterval = 5000; // setelah burst, fetch lebih lambat
+    nextInterval = 5000; // setelah burst, fetch tiap 5 detik
   }
-  intervalId = setInterval(updateDisplay, fetchInterval);
+
+  intervalId = setTimeout(updateDisplay, nextInterval);
 }
 
 // Start
 updateDisplay();
-intervalId = setInterval(updateDisplay, fetchInterval);
 </script>
 
 </body>
