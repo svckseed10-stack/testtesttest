@@ -1,15 +1,16 @@
 export default async function handler(req, res) {
-    try {
-        const response = await fetch("https://api.treasury.id/api/v1/antigrvty/gold/rate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}"
-        });
+  try {
+    const url = "https://www.indogold.id/public/api/purities/5/products?lastPrice=1&orderBy=asc";
+    const apiRes = await fetch(url);
 
-        const data = await response.json();
-        res.status(200).json(data);
-
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch data" });
+    if (!apiRes.ok) {
+      return res.status(500).json({ error: "API gagal diambil" });
     }
+
+    const data = await apiRes.json();
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: "Server bermasalah" });
+  }
 }
