@@ -41,12 +41,18 @@
         transition: all 0.3s ease;
     }
 
-    .green {
-        color: #4caf50;
+    .diff {
+        font-size: 14px;
+        margin-top: 4px;
     }
 
-    .red {
-        color: #ff5252;
+    .green { color: #4caf50; }
+    .red { color: #ff5252; }
+
+    #spread {
+        margin-top: 20px;
+        font-size: 18px;
+        color: #f0e68c;
     }
 
     #update {
@@ -71,11 +77,16 @@
 <h1>Real-time Gold Price (1s Update)</h1>
 
 <div class="box">
+
     <div class="label">Buy Price</div>
     <div id="buy" class="price">Loading...</div>
+    <div id="buyDiff" class="diff"></div>
 
     <div class="label" style="margin-top:20px;">Sell Price</div>
     <div id="sell" class="price">Loading...</div>
+    <div id="sellDiff" class="diff"></div>
+
+    <div id="spread"></div>
 
     <div id="update">Waiting update...</div>
 </div>
@@ -92,6 +103,11 @@ async function loadGold() {
         updatePrice("buy", data.buying_rate, "buy");
         updatePrice("sell", data.selling_rate, "sell");
 
+        // SPREAD
+        const spread = data.buying_rate - data.selling_rate;
+        document.getElementById("spread").innerText =
+            "Spread: " + spread.toLocaleString("id-ID");
+
         document.getElementById("update").innerText =
             "Updated: " + data.updated_at;
 
@@ -101,19 +117,29 @@ async function loadGold() {
     }
 }
 
-function updatePrice(elementId, newValue, type) {
-    const el = document.getElementById(elementId);
-    const lastValue = type === "buy" ? lastBuy : lastSell;
+function updatePrice(id, newValue, type) {
+    const el = document.getElementById(id);
+    const diffEl = document.getElementById(id + "Diff");
 
+    const lastValue = type === "buy" ? lastBuy : lastSell;
     el.innerText = newValue.toLocaleString("id-ID");
 
     if (lastValue !== null) {
         el.classList.remove("green", "red", "fade");
 
-        if (newValue > lastValue) {
-            el.classList.add("green", "fade"); // naik
-        } else if (newValue < lastValue) {
-            el.classList.add("red", "fade"); // turun
+        let diff = newValue - lastValue;
+
+        // Arrow + diff
+        if (diff > 0) {
+            el.classList.add("green", "fade");
+            diffEl.innerHTML = `<span class="green">⬆ +${diff.toLocaleString("id-ID")}</span>`;
+        } 
+        else if (diff < 0) {
+            el.classList.add("red", "fade");
+            diffEl.innerHTML = `<span class="red">⬇ ${diff.toLocaleString("id-ID")}</span>`;
+        } 
+        else {
+            diffEl.innerHTML = `<span style="color:#888;">= 0</span>`;
         }
     }
 
@@ -122,7 +148,7 @@ function updatePrice(elementId, newValue, type) {
 }
 
 loadGold();
-setInterval(loadGold, 1000); // update tiap 1 detik
+setInterval(loadGold, 1000); // realtime 1 detik
 </script>
 
 </body>
