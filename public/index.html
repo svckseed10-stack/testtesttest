@@ -1,81 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Gold Price</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Gold Price</title>
 
-  <style>
+<style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-      text-align: center;
+        font-family: Arial, sans-serif;
+        background: #111;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
     }
 
     .box {
-      background: white;
-      padding: 20px;
-      margin: 20px auto;
-      border-radius: 10px;
-      max-width: 400px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        background: #1a1a1a;
+        padding: 20px;
+        margin: 30px auto;
+        border-radius: 14px;
+        max-width: 420px;
+        box-shadow: 0 0 25px rgba(0,0,0,0.4);
+        border: 1px solid #333;
     }
 
-    h2 {
-      margin-bottom: 10px;
+    h1 {
+        margin-bottom: 20px;
+        font-size: 26px;
+    }
+
+    .label {
+        font-size: 16px;
+        color: #ccc;
     }
 
     .price {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 10px 0;
+        font-size: 32px;
+        font-weight: bold;
+        margin-top: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .green {
+        color: #4caf50;
+    }
+
+    .red {
+        color: #ff5252;
     }
 
     #update {
-      font-size: 14px;
-      color: gray;
+        margin-top: 15px;
+        font-size: 12px;
+        color: #888;
     }
-  </style>
+
+    .fade {
+        animation: fadeMove 0.4s ease-out;
+    }
+
+    @keyframes fadeMove {
+        0% { transform: scale(1.08); opacity: 0.2; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+</style>
+
 </head>
-
 <body>
-  <h1>Live Gold Price</h1>
 
-  <div class="box">
-    <h2>Buy Price</h2>
+<h1>Real-time Gold Price (1s Update)</h1>
+
+<div class="box">
+    <div class="label">Buy Price</div>
     <div id="buy" class="price">Loading...</div>
 
-    <h2>Sell Price</h2>
+    <div class="label" style="margin-top:20px;">Sell Price</div>
     <div id="sell" class="price">Loading...</div>
 
-    <p id="update">Updating...</p>
-  </div>
+    <div id="update">Waiting update...</div>
+</div>
 
-  <script>
-    async function loadGold() {
-      try {
+<script>
+let lastBuy = null;
+let lastSell = null;
+
+async function loadGold() {
+    try {
         const res = await fetch("/api/gold");
         const data = await res.json();
 
-        document.getElementById("buy").innerText =
-          data.buying_rate.toLocaleString("id-ID");
-
-        document.getElementById("sell").innerText =
-          data.selling_rate.toLocaleString("id-ID");
+        updatePrice("buy", data.buying_rate, "buy");
+        updatePrice("sell", data.selling_rate, "sell");
 
         document.getElementById("update").innerText =
-          "Updated: " + data.updated_at;
+            "Updated: " + data.updated_at;
 
-      } catch (err) {
+    } catch (err) {
         document.getElementById("buy").innerText = "Error";
         document.getElementById("sell").innerText = "Error";
-        document.getElementById("update").innerText = "Gagal mengambil data";
-      }
+    }
+}
+
+function updatePrice(elementId, newValue, type) {
+    const el = document.getElementById(elementId);
+    const lastValue = type === "buy" ? lastBuy : lastSell;
+
+    el.innerText = newValue.toLocaleString("id-ID");
+
+    if (lastValue !== null) {
+        el.classList.remove("green", "red", "fade");
+
+        if (newValue > lastValue) {
+            el.classList.add("green", "fade"); // naik
+        } else if (newValue < lastValue) {
+            el.classList.add("red", "fade"); // turun
+        }
     }
 
-    loadGold();
-    setInterval(loadGold, 15000); // refresh 15 detik
-  </script>
+    if (type === "buy") lastBuy = newValue;
+    if (type === "sell") lastSell = newValue;
+}
+
+loadGold();
+setInterval(loadGold, 1000); // update tiap 1 detik
+</script>
+
 </body>
 </html>
