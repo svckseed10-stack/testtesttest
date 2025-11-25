@@ -136,53 +136,40 @@ async function load() {
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
-    // ===== BUY =====
     const buyEl = document.getElementById("buy");
     const buyDiffEl = document.getElementById("buyDiff");
     buyEl.classList.remove("green", "red", "fade");
 
-    if (lastBuy !== null) {
-      const diff = buy - lastBuy;
-      if (diff !== 0) {
-        lastBuyDiff = diff; // update hanya jika harga berubah
-      }
-    }
-
-    // Tampilkan diff terakhir tetap
-    if (lastBuyDiff > 0) {
-      buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
-      buyEl.classList.add("green", "fade");
-    } else if (lastBuyDiff < 0) {
-      buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
-      buyEl.classList.add("red", "fade");
-    } else {
-      buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-    }
-
-    buyEl.innerText = formatNumber(buy);
-
-    // ===== SELL =====
     const sellEl = document.getElementById("sell");
     const sellDiffEl = document.getElementById("sellDiff");
     sellEl.classList.remove("green", "red", "fade");
 
-    if (lastSell !== null) {
-      const diff = sell - lastSell;
-      if (diff !== 0) {
-        lastSellDiff = diff; // update hanya jika harga berubah
-      }
+    // ===== BUY =====
+    if (lastBuy !== null && buy !== lastBuy) {
+      const diff = buy - lastBuy;
+      lastBuyDiff = diff;
+      if (diff > 0) buyEl.classList.add("green", "fade");
+      else if (diff < 0) buyEl.classList.add("red", "fade");
     }
 
-    // Tampilkan diff terakhir tetap
-    if (lastSellDiff > 0) {
-      sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
-      sellEl.classList.add("green", "fade");
-    } else if (lastSellDiff < 0) {
-      sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
-      sellEl.classList.add("red", "fade");
-    } else {
-      sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+    // Selisih tetap tampil meski harga tidak berubah
+    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
+    else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+
+    buyEl.innerText = formatNumber(buy);
+
+    // ===== SELL =====
+    if (lastSell !== null && sell !== lastSell) {
+      const diff = sell - lastSell;
+      lastSellDiff = diff;
+      if (diff > 0) sellEl.classList.add("green", "fade");
+      else if (diff < 0) sellEl.classList.add("red", "fade");
     }
+
+    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+    else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
 
     sellEl.innerText = formatNumber(sell);
 
