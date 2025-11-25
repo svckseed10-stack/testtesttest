@@ -1,13 +1,81 @@
-<script>
-async function loadGold() {
-  const res = await fetch("/api/gold");
-  const data = await res.json();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Gold Price</title>
 
-  document.getElementById("buy").innerText = data.buying_rate.toLocaleString();
-  document.getElementById("sell").innerText = data.selling_rate.toLocaleString();
-  document.getElementById("update").innerText = data.updated_at;
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+    }
 
-loadGold();
-setInterval(loadGold, 15000); // refresh 15 detik
-</script>
+    .box {
+      background: white;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 10px;
+      max-width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .price {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    #update {
+      font-size: 14px;
+      color: gray;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Live Gold Price</h1>
+
+  <div class="box">
+    <h2>Buy Price</h2>
+    <div id="buy" class="price">Loading...</div>
+
+    <h2>Sell Price</h2>
+    <div id="sell" class="price">Loading...</div>
+
+    <p id="update">Updating...</p>
+  </div>
+
+  <script>
+    async function loadGold() {
+      try {
+        const res = await fetch("/api/gold");
+        const data = await res.json();
+
+        document.getElementById("buy").innerText =
+          data.buying_rate.toLocaleString("id-ID");
+
+        document.getElementById("sell").innerText =
+          data.selling_rate.toLocaleString("id-ID");
+
+        document.getElementById("update").innerText =
+          "Updated: " + data.updated_at;
+
+      } catch (err) {
+        document.getElementById("buy").innerText = "Error";
+        document.getElementById("sell").innerText = "Error";
+        document.getElementById("update").innerText = "Gagal mengambil data";
+      }
+    }
+
+    loadGold();
+    setInterval(loadGold, 15000); // refresh 15 detik
+  </script>
+</body>
+</html>
