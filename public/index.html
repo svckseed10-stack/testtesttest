@@ -106,9 +106,6 @@
 let lastBuy = null;
 let lastSell = null;
 
-let lastBuyDiff = 0;
-let lastSellDiff = 0;
-
 // Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
   const now = new Date();
@@ -133,78 +130,73 @@ async function load() {
     // Time WIB
     document.getElementById("time").innerText = getJakartaTimeString();
 
-    const buy = Number(data.buying_rate);
-    const sell = Number(data.selling_rate);
+    // Parse angka, pastikan number
+    const buy = parseFloat(data.buying_rate);
+    const sell = parseFloat(data.selling_rate);
 
-    // =============================
-    // BUYING
-    // =============================
+    // ===== BUY =====
+    const buyEl = document.getElementById("buy");
+    const buyDiffEl = document.getElementById("buyDiff");
+    buyEl.classList.remove("green", "red", "fade");
+
     if (lastBuy !== null) {
       const diff = buy - lastBuy;
-
-      if (diff !== 0) {
-        lastBuyDiff = diff; // only update when price changes
+      if (diff > 0) {
+        buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(diff)}</span>`;
+        buyEl.classList.add("green", "fade");
+      } else if (diff < 0) {
+        buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(diff)}</span>`;
+        buyEl.classList.add("red", "fade");
+      } else {
+        buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
       }
-    }
-
-    const buyEl = document.getElementById("buy");
-    buyEl.innerText = formatNumber(buy);
-
-    const buyDiffEl = document.getElementById("buyDiff");
-
-    if (lastBuyDiff > 0) {
-      buyDiffEl.innerHTML = `<span class="green">⬆ +${lastBuyDiff}</span>`;
-      buyEl.classList.add("green", "fade");
-    } else if (lastBuyDiff < 0) {
-      buyDiffEl.innerHTML = `<span class="red">⬇ ${lastBuyDiff}</span>`;
-      buyEl.classList.add("red", "fade");
     } else {
       buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
 
-    // =============================
-    // SELLING
-    // =============================
+    buyEl.innerText = formatNumber(buy);
+
+    // ===== SELL =====
+    const sellEl = document.getElementById("sell");
+    const sellDiffEl = document.getElementById("sellDiff");
+    sellEl.classList.remove("green", "red", "fade");
+
     if (lastSell !== null) {
       const diff = sell - lastSell;
-
-      if (diff !== 0) {
-        lastSellDiff = diff; // only update if changed
+      if (diff > 0) {
+        sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(diff)}</span>`;
+        sellEl.classList.add("green", "fade");
+      } else if (diff < 0) {
+        sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(diff)}</span>`;
+        sellEl.classList.add("red", "fade");
+      } else {
+        sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
       }
-    }
-
-    const sellEl = document.getElementById("sell");
-    sellEl.innerText = formatNumber(sell);
-
-    const sellDiffEl = document.getElementById("sellDiff");
-
-    if (lastSellDiff > 0) {
-      sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
-      sellEl.classList.add("green", "fade");
-    } else if (lastSellDiff < 0) {
-      sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
-      sellEl.classList.add("red", "fade");
     } else {
       sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
 
-    // =============================
-    // SPREAD
-    // =============================
+    sellEl.innerText = formatNumber(sell);
+
+    // ===== SPREAD =====
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
-    // save last
+    // Save last
     lastBuy = buy;
     lastSell = sell;
 
   } catch (err) {
     document.getElementById("buy").innerText = "Error";
     document.getElementById("sell").innerText = "Error";
+    document.getElementById("buyDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("sellDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText = "Spread: -";
+    console.error(err);
   }
 }
 
-// Run every second
+// Run every 1 second
 load();
 setInterval(load, 1000);
 </script>
