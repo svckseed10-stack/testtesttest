@@ -108,28 +108,31 @@ let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-let fastFetchCount = 0;
-const FAST_FETCH_LIMIT = 5; // burst 0.5 detik
-const BURST_INTERVAL = 500; // 0.5 detik
-const NORMAL_INTERVAL = 5000; // 5 detik setelah burst
-
-// Jam WIB realtime tiap detik
-setInterval(() => {
-  document.getElementById("time").innerText = new Intl.DateTimeFormat("en-US", {
+// Format jam WIB Asia/Jakarta (AM/PM)
+function getJakartaTimeString() {
+  const now = new Date();
+  return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
     timeZone: "Asia/Jakarta"
-  }).format(new Date());
-}, 1000);
+  }).format(now);
+}
 
-// Fetch & update harga (non-blocking)
-async function fetchAndUpdate() {
+function formatNumber(n) {
+  return n.toLocaleString("id-ID");
+}
+
+async function load() {
   try {
     const res = await fetch("/api/gold");
     const data = await res.json();
 
+    // Time WIB
+    document.getElementById("time").innerText = getJakartaTimeString();
+
+    // Parse angka
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
@@ -149,10 +152,12 @@ async function fetchAndUpdate() {
       else if (diff < 0) buyEl.classList.add("red", "fade");
     }
 
-    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${buyDiffEl.formatNumber(lastBuyDiff) || buy}</span>`;
-    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${buyDiffEl.formatNumber(lastBuyDiff) || buy}</span>`;
+    // Selisih tetap tampil meski harga tidak berubah
+    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
     else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-    buyEl.innerText = buy.toLocaleString("id-ID");
+
+    buyEl.innerText = formatNumber(buy);
 
     // ===== SELL =====
     if (lastSell !== null && sell !== lastSell) {
@@ -162,32 +167,33 @@ async function fetchAndUpdate() {
       else if (diff < 0) sellEl.classList.add("red", "fade");
     }
 
-    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${sellDiffEl.formatNumber(lastSellDiff) || sell}</span>`;
-    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${sellDiffEl.formatNumber(lastSellDiff) || sell}</span>`;
+    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
     else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-    sellEl.innerText = sell.toLocaleString("id-ID");
+
+    sellEl.innerText = formatNumber(sell);
 
     // ===== SPREAD =====
-    document.getElementById("spread").innerText = "Spread: " + (buy - sell).toLocaleString("id-ID");
+    document.getElementById("spread").innerText =
+      "Spread: " + formatNumber(buy - sell);
 
+    // Save last
     lastBuy = buy;
     lastSell = sell;
 
   } catch (err) {
-    console.error("Fetch error:", err);
+    document.getElementById("buy").innerText = "Error";
+    document.getElementById("sell").innerText = "Error";
+    document.getElementById("buyDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("sellDiff").innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText = "Spread: -";
+    console.error(err);
   }
 }
 
-// ==== Non-blocking burst loop ====
-function startPolling() {
-  const interval = (fastFetchCount < FAST_FETCH_LIMIT) ? BURST_INTERVAL : NORMAL_INTERVAL;
-  fastFetchCount++;
-  fetchAndUpdate(); // fire-and-forget, tidak menunggu selesai
-  setTimeout(startPolling, interval);
-}
-
-// Start polling
-startPolling();
+// Run every 1 second
+load();
+setInterval(load, 1000);
 </script>
 
 </body>
