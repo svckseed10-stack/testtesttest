@@ -1,33 +1,13 @@
-<!DOCTYPE html>
-<html>
-<body>
-  <h2>Buy Price</h2>
-  <div id="buy">Loading...</div>
+<script>
+async function loadGold() {
+  const res = await fetch("/api/gold");
+  const data = await res.json();
 
-  <h2>Sell Price</h2>
-  <div id="sell">Loading...</div>
+  document.getElementById("buy").innerText = data.buying_rate.toLocaleString();
+  document.getElementById("sell").innerText = data.selling_rate.toLocaleString();
+  document.getElementById("update").innerText = data.updated_at;
+}
 
-  <h3 id="updated"></h3>
-
-  <script>
-    async function loadGold() {
-      try {
-        const res = await fetch('/api/gold');
-        const data = await res.json();
-
-        if (!data.products) throw Error("Invalid data");
-
-        document.getElementById("buy").innerText = data.products[0].sell;
-        document.getElementById("sell").innerText = data.products[0].buy;
-        document.getElementById("updated").innerText = "Updated: " + new Date().toLocaleString();
-
-      } catch (e) {
-        document.getElementById("buy").innerText = "Error";
-        document.getElementById("sell").innerText = "Error";
-      }
-    }
-
-    loadGold();
-  </script>
-</body>
-</html>
+loadGold();
+setInterval(loadGold, 15000); // refresh 15 detik
+</script>
