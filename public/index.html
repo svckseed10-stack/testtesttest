@@ -1,98 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Realtime Gold Price</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    .box {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .rate {
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .green { color: green; }
-    .red { color: red; }
-    .gray { color: gray; }
-    .small { font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>Realtime Gold Price</h2>
-    <div id="time" class="small gray">-</div>
+<script>
+let lastBuy = null;
+let lastSell = null;
 
-    <p>Buying Rate: <span id="buy" class="rate">-</span> <span id="buyDelta"></span></p>
-    <p>Selling Rate: <span id="sell" class="rate">-</span> <span id="sellDelta"></span></p>
-    <p>Spread: <span id="spread" class="small gray">-</span></p>
-  </div>
+let lastBuyDiff = 0;
+let lastSellDiff = 0;
 
-  <script>
-    let lastBuy = null;
-    let lastSell = null;
+// Format jam Asia/Jakarta
+function getJakartaTimeString() {
+  const now = new Date();
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Jakarta"
+  }).format(now);
+}
 
-    async function fetchPrice() {
-      try {
-        const res = await fetch("/api/gold.js");
-        const data = await res.json();
+function formatNumber(n) {
+  return n.toLocaleString("id-ID");
+}
 
-        const now = new Date();
-        document.getElementById("time").textContent = now.toLocaleTimeString();
+async function load() {
+  try {
+    const res = await fetch("/api/gold");
+    const data = await res.json();
 
-        const buy = data.buying_rate;
-        const sell = data.selling_rate;
+    document.getElementById("time").innerText = getJakartaTimeString();
 
-        updateValue("buy", "buyDelta", buy, lastBuy);
-        updateValue("sell", "sellDelta", sell, lastSell);
+    const buy = Number(data.buying_rate);
+    const sell = Number(data.selling_rate);
 
-        document.getElementById("spread").textContent = (buy - sell).toLocaleString();
+    // ----- BUY -----
+    if (lastBuy !== null) {
+      const diff = buy - lastBuy;
 
-        lastBuy = buy;
-        lastSell = sell;
-      } catch (e) {
-        console.log("Error", e);
+      if (diff !== 0) {
+        // diff berubah → simpan diff baru
+        lastBuyDiff = diff;
       }
     }
 
-    function updateValue(id, deltaId, newValue, oldValue) {
-      const el = document.getElementById(id);
-      const deltaEl = document.getElementById(deltaId);
+    // tampilkan buy
+    const buyEl = document.getElementById("buy");
+    buyEl.innerText = formatNumber(buy);
 
-      el.textContent = newValue.toLocaleString();
+    const buyDiffEl = document.getElementById("buyDiff");
+    if (lastBuyDiff > 0) {
+      buyDiffEl.innerHTML = `<span class="green">⬆ +${lastBuyDiff}</span>`;
+      buyEl.classList.add("green", "fade");
+    } else if (lastBuyDiff < 0) {
+      buyDiffEl.innerHTML = `<span class="red">⬇ ${lastBuyDiff}</span>`;
+      buyEl.classList.add("red", "fade");
+    } else {
+      buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+    }
 
-      if (oldValue === null) {
-        deltaEl.textContent = " (0)";
-        deltaEl.className = "gray small";
-        return;
-      }
-
-      const diff = newValue - oldValue;
-
-      if (diff > 0) {
-        deltaEl.textContent = ` ▲ +${diff.toLocaleString()}`;
-        deltaEl.className = "green small";
-      } else if (diff < 0) {
-        deltaEl.textContent = ` ▼ ${diff.toLocaleString()}`;
-        deltaEl.className = "red small";
-      } else {
-        deltaEl.textContent = " (0)";
-        deltaEl.className = "gray small";
+    // ----- SELL -----
+    if (lastSell !== null) {
+      const diff = sell - lastSell;
+      if (diff !== 0) {
+        lastSellDiff = diff;
       }
     }
 
-    setInterval(fetchPrice, 1000);
-    fetchPrice();
-  </script>
-</body>
-</html>
+    const sellEl = document.getElementById("sell");
+    sellEl.innerText = formatNumber(sell);
+
+    const sellDiffEl = document.getElementById("sellDiff");
+    if (lastSellDiff > 0) {
+      sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+      sellEl.classList.add("green", "fade");
+    } else if (lastSellDiff < 0) {
+      sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+      sellEl.classList.add("red", "fade");
+    } else {
+      sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+    }
+
+    // ---- SPREAD ----
+    document.getElementById("spread").innerText =
+      "Spread: " + formatNumber(buy - sell);
+
+    // simpan last values
+    lastBuy = buy;
+    lastSell = sell;
+
+  } catch (e) {
+    document.getElementById("buy").innerText = "Error";
+    document.getElementById("sell").innerText = "Error";
+  }
+}
+
+load();
+setInterval(load, 1000);
+</script>
