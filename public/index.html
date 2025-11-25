@@ -1,3 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Realtime Gold Price (WIB)</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .card {
+    background: #1a1a1a;
+    padding: 20px 24px;
+    border-radius: 12px;
+    width: 360px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 1px solid #222;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    text-align: center;
+  }
+
+  .time {
+    text-align: center;
+    color: #bbb;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .row {
+    margin: 12px 0;
+  }
+
+  .label {
+    color: #aaa;
+    font-size: 13px;
+  }
+
+  .value {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .diff {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .green { color: #4caf50; }
+  .red { color: #ff6b6b; }
+  .neutral { color: #999; }
+
+  .fade {
+    animation: pulse 0.25s ease-out;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1.06); opacity: .2 }
+    to   { transform: scale(1); opacity: 1 }
+  }
+
+  #spread {
+    margin-top: 14px;
+    color: #f0e68c;
+    font-weight: 600;
+    text-align: center;
+  }
+</style>
+</head>
+
+<body>
+<div class="card">
+
+  <h1>Realtime Gold Price</h1>
+  <div id="time" class="time">--:--:--</div>
+
+  <div class="row">
+    <div class="label">Buying Rate</div>
+    <div id="buy" class="value">Loading...</div>
+    <div id="buyDiff" class="diff neutral">(0)</div>
+  </div>
+
+  <div class="row">
+    <div class="label">Selling Rate</div>
+    <div id="sell" class="value">Loading...</div>
+    <div id="sellDiff" class="diff neutral">(0)</div>
+  </div>
+
+  <div id="spread">Spread: -</div>
+
+</div>
+
 <script>
 let lastBuy = null;
 let lastSell = null;
@@ -5,7 +109,7 @@ let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-// Format jam Asia/Jakarta
+// Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
   const now = new Date();
   return new Intl.DateTimeFormat("en-US", {
@@ -26,26 +130,28 @@ async function load() {
     const res = await fetch("/api/gold");
     const data = await res.json();
 
+    // Time WIB
     document.getElementById("time").innerText = getJakartaTimeString();
 
     const buy = Number(data.buying_rate);
     const sell = Number(data.selling_rate);
 
-    // ----- BUY -----
+    // =============================
+    // BUYING
+    // =============================
     if (lastBuy !== null) {
       const diff = buy - lastBuy;
 
       if (diff !== 0) {
-        // diff berubah → simpan diff baru
-        lastBuyDiff = diff;
+        lastBuyDiff = diff; // only update when price changes
       }
     }
 
-    // tampilkan buy
     const buyEl = document.getElementById("buy");
     buyEl.innerText = formatNumber(buy);
 
     const buyDiffEl = document.getElementById("buyDiff");
+
     if (lastBuyDiff > 0) {
       buyDiffEl.innerHTML = `<span class="green">⬆ +${lastBuyDiff}</span>`;
       buyEl.classList.add("green", "fade");
@@ -56,11 +162,14 @@ async function load() {
       buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
 
-    // ----- SELL -----
+    // =============================
+    // SELLING
+    // =============================
     if (lastSell !== null) {
       const diff = sell - lastSell;
+
       if (diff !== 0) {
-        lastSellDiff = diff;
+        lastSellDiff = diff; // only update if changed
       }
     }
 
@@ -68,6 +177,7 @@ async function load() {
     sellEl.innerText = formatNumber(sell);
 
     const sellDiffEl = document.getElementById("sellDiff");
+
     if (lastSellDiff > 0) {
       sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
       sellEl.classList.add("green", "fade");
@@ -78,20 +188,26 @@ async function load() {
       sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
     }
 
-    // ---- SPREAD ----
+    // =============================
+    // SPREAD
+    // =============================
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
-    // simpan last values
+    // save last
     lastBuy = buy;
     lastSell = sell;
 
-  } catch (e) {
+  } catch (err) {
     document.getElementById("buy").innerText = "Error";
     document.getElementById("sell").innerText = "Error";
   }
 }
 
+// Run every second
 load();
 setInterval(load, 1000);
 </script>
+
+</body>
+</html>
