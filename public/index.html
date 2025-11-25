@@ -108,6 +108,11 @@ let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
+// ===== Caching =====
+let cachedData = null;
+let lastFetchTime = 0;
+const FETCH_INTERVAL = 60000; // 60 detik
+
 // Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
   const now = new Date();
@@ -124,17 +129,27 @@ function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-async function load() {
-  try {
+// Fetch data dengan caching 60 detik
+async function fetchGoldData() {
+  const now = Date.now();
+  if (!cachedData || now - lastFetchTime > FETCH_INTERVAL) {
     const res = await fetch("/api/gold");
-    const data = await res.json();
+    cachedData = await res.json();
+    lastFetchTime = now;
+  }
+  return cachedData;
+}
 
-    // Time WIB
-    document.getElementById("time").innerText = getJakartaTimeString();
+// Update tampilan tiap 1 detik
+async function updateDisplay() {
+  try {
+    const data = await fetchGoldData();
 
-    // Parse angka
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
+
+    // ===== JAM =====
+    document.getElementById("time").innerText = getJakartaTimeString();
 
     const buyEl = document.getElementById("buy");
     const buyDiffEl = document.getElementById("buyDiff");
@@ -152,7 +167,6 @@ async function load() {
       else if (diff < 0) buyEl.classList.add("red", "fade");
     }
 
-    // Selisih tetap tampil meski harga tidak berubah
     if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
     else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
     else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
@@ -177,7 +191,7 @@ async function load() {
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
-    // Save last
+    // Simpan harga terakhir
     lastBuy = buy;
     lastSell = sell;
 
@@ -191,9 +205,9 @@ async function load() {
   }
 }
 
-// Run every 1 second
-load();
-setInterval(load, 1000);
+// Jalankan update tiap 1 detik
+updateDisplay();
+setInterval(updateDisplay, 1000);
 </script>
 
 </body>
