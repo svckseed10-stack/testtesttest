@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -77,7 +78,15 @@
     font-weight: 600;
     text-align: center;
   }
+
+  #profit {
+    margin-top: 14px;
+    text-align: center;
+    font-weight: 600;
+    color: #fff;
+  }
 </style>
+
 </head>
 
 <body>
@@ -99,16 +108,20 @@
   </div>
 
   <div id="spread">Spread: -</div>
+  <div id="profit">Profit: -</div>
 
 </div>
 
 <script>
+const modalBayar = 19315000;
+const nilaiEmas = 20000000;
+
 let lastBuy = null;
 let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
+let lastSellingRate = null;
 
-// Format jam WIB Asia/Jakarta (AM/PM)
 function getJakartaTimeString() {
   const now = new Date();
   return new Intl.DateTimeFormat("en-US", {
@@ -124,17 +137,39 @@ function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-async function load() {
+function hitungProfit(sellingRate, buyingRate) {
+    const jumlahGram = nilaiEmas / buyingRate;
+    const totalJual = jumlahGram * sellingRate;
+    const profitRupiah = totalJual - modalBayar;
+    const profitGram = profitRupiah / sellingRate;
+    return { profitRupiah, profitGram, jumlahGram };
+}
+
+function updateProfitUI(sellingRate, buyingRate) {
+    if (lastSellingRate !== null && lastSellingRate === sellingRate) return;
+
+    const { profitRupiah, profitGram, jumlahGram } = hitungProfit(sellingRate, buyingRate);
+
+    const profitEl = document.getElementById("profit");
+    let color = "neutral";
+    if (profitRupiah > 0) color = "green";
+    else if (profitRupiah < 0) color = "red";
+
+    profitEl.innerHTML = `Profit: <span class="${color}">Rp ${profitRupiah.toLocaleString("id-ID")} (${profitGram.toFixed(3)} gr)</span><br>
+                          Jumlah Emas: ${jumlahGram.toFixed(3)} gr`;
+
+    lastSellingRate = sellingRate;
+}
+
+async function loadGold() {
   try {
     const res = await fetch("/api/gold");
     const data = await res.json();
 
-    // Time WIB
-    document.getElementById("time").innerText = getJakartaTimeString();
-
-    // Parse angka
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
+
+    document.getElementById("time").innerText = getJakartaTimeString();
 
     const buyEl = document.getElementById("buy");
     const buyDiffEl = document.getElementById("buyDiff");
@@ -144,56 +179,50 @@ async function load() {
     const sellDiffEl = document.getElementById("sellDiff");
     sellEl.classList.remove("green", "red", "fade");
 
-    // ===== BUY =====
+    // BUY
     if (lastBuy !== null && buy !== lastBuy) {
       const diff = buy - lastBuy;
       lastBuyDiff = diff;
-      if (diff > 0) buyEl.classList.add("green", "fade");
-      else if (diff < 0) buyEl.classList.add("red", "fade");
+      buyEl.classList.add(diff>0?"green":"red","fade");
     }
-
-    // Selisih tetap tampil meski harga tidak berubah
-    if (lastBuyDiff > 0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
-    else if (lastBuyDiff < 0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
+    buyEl.innerText = formatNumber(buy);
+    if (lastBuyDiff>0) buyDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`;
+    else if (lastBuyDiff<0) buyDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`;
     else buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
 
-    buyEl.innerText = formatNumber(buy);
-
-    // ===== SELL =====
+    // SELL
     if (lastSell !== null && sell !== lastSell) {
       const diff = sell - lastSell;
       lastSellDiff = diff;
-      if (diff > 0) sellEl.classList.add("green", "fade");
-      else if (diff < 0) sellEl.classList.add("red", "fade");
+      sellEl.classList.add(diff>0?"green":"red","fade");
     }
-
-    if (lastSellDiff > 0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
-    else if (lastSellDiff < 0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
+    sellEl.innerText = formatNumber(sell);
+    if (lastSellDiff>0) sellDiffEl.innerHTML = `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`;
+    else if (lastSellDiff<0) sellDiffEl.innerHTML = `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`;
     else sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
 
-    sellEl.innerText = formatNumber(sell);
+    // SPREAD
+    document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
 
-    // ===== SPREAD =====
-    document.getElementById("spread").innerText =
-      "Spread: " + formatNumber(buy - sell);
+    // PROFIT
+    updateProfitUI(sell, buy);
 
-    // Save last
     lastBuy = buy;
     lastSell = sell;
 
-  } catch (err) {
+  } catch(err) {
     document.getElementById("buy").innerText = "Error";
     document.getElementById("sell").innerText = "Error";
     document.getElementById("buyDiff").innerHTML = `<span class="neutral">(0)</span>`;
     document.getElementById("sellDiff").innerHTML = `<span class="neutral">(0)</span>`;
     document.getElementById("spread").innerText = "Spread: -";
+    document.getElementById("profit").innerText = "Profit: -";
     console.error(err);
   }
 }
 
-// Run every 1 second
-load();
-setInterval(load, 1000);
+loadGold();
+setInterval(loadGold, 1000);
 </script>
 
 </body>
