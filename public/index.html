@@ -110,6 +110,27 @@
   <div id="profit">Profit 20jt: -</div>
   <div id="profit2">Profit 30jt: -</div>
 
+  <!-- TradingView Widget BEGIN -->
+  <div class="tradingview-widget-container" style="height:300px; width:100%; margin-top: 20px;">
+    <div class="tradingview-widget-container__widget" style="height:100%; width:100%"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+    {
+      "autosize": true,
+      "symbol": "XAUUSD",
+      "interval": "D",
+      "timezone": "Asia/Jakarta",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "hide_top_toolbar": false,
+      "hide_side_toolbar": true,
+      "backgroundColor": "#1a1a1a",
+      "gridColor": "rgba(255,255,255,0.05)"
+    }
+    </script>
+  </div>
+  <!-- TradingView Widget END -->
+
 </div>
 
 <script>
@@ -117,11 +138,10 @@
    KONFIGURASI MODAL FINAL
 ============================= */
 const nilaiEmas20 = 20000000;
-const modal20 = 20000000 - 685000;   // 19.315.000
+const modal20 = 20000000 - 685000;
 
 const nilaiEmas30 = 30000000;
-const modal30 = 30000000 - 1020000;  // 28.980.000
-
+const modal30 = 30000000 - 1020000;
 
 /* =============================
    FORMAT ANGKA
@@ -134,47 +154,45 @@ function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-
 /* =============================
-   PROFIT VARIAN 20 JT
+   PROFIT 20 JT
 ============================= */
-function hitungProfit20(sellingRate, buyingRate) {
-  const jumlahGram = nilaiEmas20 / buyingRate;
-  const totalJual = jumlahGram * sellingRate;
+function hitungProfit20(sell, buy) {
+  const jumlahGram = nilaiEmas20 / buy;
+  const totalJual = jumlahGram * sell;
 
   const profitRupiah = totalJual - modal20;
-  const profitGram = profitRupiah / sellingRate;
+  const profitGram = profitRupiah / sell;
 
   return { profitRupiah, profitGram, jumlahGram };
 }
 
-function updateProfitUI20(sellingRate, buyingRate) {
-  const out = hitungProfit20(sellingRate, buyingRate);
+function updateProfitUI20(sell, buy) {
+  const out = hitungProfit20(sell, buy);
   document.getElementById("profit").innerHTML = `
-    Profit 20jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
+    Profit 20jt: Rp ${out.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
     (${formatDecimal(out.profitGram)} gr)<br>
     Jumlah Emas: ${formatDecimal(out.jumlahGram)} gr
   `;
 }
 
-
 /* =============================
-   PROFIT VARIAN 30 JT
+   PROFIT 30 JT
 ============================= */
-function hitungProfit30(sellingRate, buyingRate) {
-  const jumlahGram = nilaiEmas30 / buyingRate;
-  const totalJual = jumlahGram * sellingRate;
+function hitungProfit30(sell, buy) {
+  const jumlahGram = nilaiEmas30 / buy;
+  const totalJual = jumlahGram * sell;
 
   const profitRupiah = totalJual - modal30;
-  const profitGram = profitRupiah / sellingRate;
+  const profitGram = profitRupiah / sell;
 
   return { profitRupiah, profitGram, jumlahGram };
 }
 
-function updateProfitUI30(sellingRate, buyingRate) {
-  const out = hitungProfit30(sellingRate, buyingRate);
+function updateProfitUI30(sell, buy) {
+  const out = hitungProfit30(sell, buy);
   document.getElementById("profit2").innerHTML = `
-    Profit 30jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
+    Profit 30jt: Rp ${out.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
     (${formatDecimal(out.profitGram)} gr)<br>
     Jumlah Emas: ${formatDecimal(out.jumlahGram)} gr
   `;
@@ -185,17 +203,13 @@ function updateAllProfit(sell, buy) {
   updateProfitUI30(sell, buy);
 }
 
-
 /* =============================
-   UPDATE WAKTU REaltime WIB
+   WAKTU REALTIME
 ============================= */
 function getJakartaTimeString() {
   return new Date().toLocaleTimeString("id-ID", {
     timeZone: "Asia/Jakarta",
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
+    hour12: false
   });
 }
 
@@ -206,18 +220,18 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-
 /* =============================
-   LOAD DATA EMAS REaltime
+   LOAD DATA API EMAS
 ============================= */
 let lastBuy = null;
 let lastSell = null;
+
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
 async function loadGold() {
   try {
-    const res = await fetch("/api/gold"); // pastikan endpoint tersedia
+    const res = await fetch("/api/gold");
     const data = await res.json();
 
     const buy = parseFloat(data.buying_rate);
@@ -231,52 +245,50 @@ async function loadGold() {
     buyEl.classList.remove("green","red","fade");
     sellEl.classList.remove("green","red","fade");
 
-    /* ===== BUY ===== */
-    if(lastBuy !== null && buy !== lastBuy){
+    /* BUY */
+    if (lastBuy !== null && buy !== lastBuy) {
       const diff = buy - lastBuy;
       lastBuyDiff = diff;
-      buyEl.classList.add(diff>0?"green":"red","fade");
+      buyEl.classList.add(diff > 0 ? "green" : "red", "fade");
     }
     buyEl.innerText = formatNumber(buy);
-    buyDiffEl.innerHTML = lastBuyDiff>0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
-                              lastBuyDiff<0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
-                              `<span class="neutral">(0)</span>`;
+    buyDiffEl.innerHTML = lastBuyDiff > 0 ?
+      `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
+      lastBuyDiff < 0 ?
+      `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
 
-    /* ===== SELL ===== */
-    if(lastSell !== null && sell !== lastSell){
+    /* SELL */
+    if (lastSell !== null && sell !== lastSell) {
       const diff = sell - lastSell;
       lastSellDiff = diff;
-      sellEl.classList.add(diff>0?"green":"red","fade");
+      sellEl.classList.add(diff > 0 ? "green" : "red", "fade");
     }
     sellEl.innerText = formatNumber(sell);
-    sellDiffEl.innerHTML = lastSellDiff>0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
-                               lastSellDiff<0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
-                               `<span class="neutral">(0)</span>`;
+    sellDiffEl.innerHTML = lastSellDiff > 0 ?
+      `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
+      lastSellDiff < 0 ?
+      `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
 
-    /* ===== SPREAD ===== */
-    document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
+    /* SPREAD */
+    document.getElementById("spread").innerText =
+      "Spread: " + formatNumber(buy - sell);
 
-    /* ===== PROFIT ===== */
+    /* PROFIT */
     updateAllProfit(sell, buy);
 
     lastBuy = buy;
     lastSell = sell;
 
-  } catch(err){
+  } catch (err) {
     console.error(err);
-    buyEl.innerText = "Error";
-    sellEl.innerText = "Error";
-    buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-    sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
-    document.getElementById("spread").innerText = "Spread: -";
-    document.getElementById("profit").innerText = "Profit 20jt: -";
-    document.getElementById("profit2").innerText = "Profit 30jt: -";
   }
 }
 
 loadGold();
-setInterval(loadGold, 1000); // update harga tiap detik
-
+setInterval(loadGold, 1000);
 </script>
+
 </body>
 </html>
