@@ -11,10 +11,10 @@
     background: #111;
     color: #fff;
     margin: 0;
-    overflow: hidden; /* agar tidak scroll & fullscreen rapih */
+    overflow: hidden; /* fullscreen clean */
   }
 
-  /* CARD KECIL DI ATAS */
+  /* CARD UTAMA DI ATAS */
   .card {
     background: #1a1a1a;
     padding: 20px 24px;
@@ -88,27 +88,17 @@
     font-weight: 600;
   }
 
-  /* AREA CHART AUTO-FIT */
+  /* CHART AUTO FIT */
   #chartWrapper {
     position: absolute;
-    top: 480px; /* tinggi card + margin */
     left: 0;
     right: 0;
     bottom: 0;
 
     width: 100vw;
-    height: calc(100vh - 480px);
+    height: auto;
     z-index: 0;
   }
-
-  /* Jika HP lebih kecil */
-  @media (max-width: 480px) {
-    #chartWrapper {
-      top: 520px;
-      height: calc(100vh - 520px);
-    }
-  }
-
 </style>
 </head>
 
@@ -139,10 +129,11 @@
 
 </div>
 
-<!-- CHART FULLSCREEN AUTO FIT -->
+<!-- CHART FULL AUTO SIZE -->
 <div id="chartWrapper">
   <div class="tradingview-widget-container" style="width:100%;height:100%;">
     <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
+
     <script type="text/javascript"
       src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
     {
@@ -157,29 +148,45 @@
       "gridColor": "rgba(255,255,255,0.05)"
     }
     </script>
+
   </div>
 </div>
 
 <script>
-/* =============================
-   KONFIGURASI MODAL
-============================= */
+/* ========================================
+   AUTO POSITION CHART DI BAWAH CARD
+======================================== */
+function adjustChartTop() {
+  const card = document.querySelector(".card");
+  const chart = document.getElementById("chartWrapper");
+
+  const cardHeight = card.offsetHeight + 30; // 30px margin bawah
+
+  chart.style.top = cardHeight + "px";
+  chart.style.height = `calc(100vh - ${cardHeight}px)`;
+}
+
+window.onload = adjustChartTop;
+window.onresize = adjustChartTop;
+
+
+/* ========================================
+   PROFIT & FUNGSI UTAMA (ASLI KODE ANDA)
+======================================== */
 const nilaiEmas20 = 20000000;
 const modal20 = 20000000 - 685000;
 
 const nilaiEmas30 = 30000000;
 const modal30 = 30000000 - 1020000;
 
-/* FORMAT ANGKA */
 function formatDecimal(num) {
   return num.toLocaleString("id-ID", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 }
-
 function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-/* PROFIT 20 JT */
+/* PROFIT 20JT */
 function hitungProfit20(sell, buy) {
   const jumlahGram = nilaiEmas20 / buy;
   const totalJual = jumlahGram * sell;
@@ -199,7 +206,7 @@ function updateProfitUI20(sell, buy) {
   `;
 }
 
-/* PROFIT 30 JT */
+/* PROFIT 30JT */
 function hitungProfit30(sell, buy) {
   const jumlahGram = nilaiEmas30 / buy;
   const totalJual = jumlahGram * sell;
@@ -224,18 +231,16 @@ function updateAllProfit(sell, buy) {
   updateProfitUI30(sell, buy);
 }
 
-/* WAKTU REALTIME */
+/* WAKTU */
 function getJakartaTimeString() {
   return new Date().toLocaleTimeString("id-ID", {
     timeZone: "Asia/Jakarta",
     hour12: false
   });
 }
-
 function updateTime() {
   document.getElementById("time").innerText = getJakartaTimeString();
 }
-
 setInterval(updateTime, 1000);
 updateTime();
 
@@ -261,7 +266,6 @@ async function loadGold() {
     buyEl.classList.remove("green","red","fade");
     sellEl.classList.remove("green","red","fade");
 
-    /* BUY */
     if (lastBuy !== null && buy !== lastBuy) {
       const diff = buy - lastBuy;
       lastBuyDiff = diff;
@@ -273,7 +277,6 @@ async function loadGold() {
       lastBuyDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
       `<span class="neutral">(0)</span>`;
 
-    /* SELL */
     if (lastSell !== null && sell !== lastSell) {
       const diff = sell - lastSell;
       lastSellDiff = diff;
@@ -285,10 +288,8 @@ async function loadGold() {
       lastSellDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
       `<span class="neutral">(0)</span>`;
 
-    /* SPREAD */
     document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
 
-    /* PROFIT */
     updateAllProfit(sell, buy);
 
     lastBuy = buy;
