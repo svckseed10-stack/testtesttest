@@ -106,6 +106,7 @@
   </div>
 
   <div id="spread">Spread: -</div>
+
   <div id="profit">Profit 20jt: -</div>
   <div id="profit2">Profit 30jt: -</div>
 
@@ -113,107 +114,89 @@
 
 <script>
 /* =============================
-   KONFIGURASI MODAL
+   KONFIGURASI MODAL FINAL
 ============================= */
-const modalBayar1 = 19315000;   // modal pertama
-const nilaiEmas = 20000000;
 
-const modalBayar2 = 30000000;   // modal varian 2
-const diskon2 = 1020000;
+// VARIAN 20 JUTA
+const nilaiEmas20 = 20000000;
+const modal20 = 20000000 - 685000; // = 19.315.000
+
+// VARIAN 30 JUTA
+const nilaiEmas30 = 30000000;
+const modal30 = 30000000 - 1020000; // = 28.980.000
+
 
 /* =============================
-   STATE
+   FORMAT ANGKA
+============================= */
+function formatDecimal(num) {
+  return num.toLocaleString("id-ID", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4
+  });
+}
+
+
+/* =============================
+   PROFIT 20 JUTA
+============================= */
+function hitungProfit20(sellingRate, buyingRate) {
+  const jumlahGram = nilaiEmas20 / buyingRate;
+  const totalJual = jumlahGram * sellingRate;
+
+  const profitRupiah = totalJual - modal20;
+  const profitGram = profitRupiah / sellingRate;
+
+  return { profitRupiah, profitGram, jumlahGram };
+}
+
+function updateProfitUI20(sellingRate, buyingRate) {
+  const out = hitungProfit20(sellingRate, buyingRate);
+
+  document.getElementById("profit").innerHTML = `
+    Profit 20jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
+    (${formatDecimal(out.profitGram)} gr)<br>
+    Jumlah Emas: ${formatDecimal(out.jumlahGram)} gr
+  `;
+}
+
+
+/* =============================
+   PROFIT 30 JUTA
+============================= */
+function hitungProfit30(sellingRate, buyingRate) {
+  const jumlahGram = nilaiEmas30 / buyingRate;
+  const totalJual = jumlahGram * sellingRate;
+
+  const profitRupiah = totalJual - modal30;
+  const profitGram = profitRupiah / sellingRate;
+
+  return { profitRupiah, profitGram, jumlahGram };
+}
+
+function updateProfitUI30(sellingRate, buyingRate) {
+  const out = hitungProfit30(sellingRate, buyingRate);
+
+  document.getElementById("profit2").innerHTML = `
+    Profit 30jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
+    (${formatDecimal(out.profitGram)} gr)<br>
+    Jumlah Emas: ${formatDecimal(out.jumlahGram)} gr
+  `;
+}
+
+
+/* =============================
+   LOAD DATA API
 ============================= */
 let lastBuy = null;
 let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-let lastProfitRate1 = null;
-let lastProfitRate2 = null;
-
-/* =============================
-   FORMAT ANGKA
-============================= */
 function formatNumber(n) {
   return n.toLocaleString("id-ID");
 }
 
-function formatDecimal(num) {
-  return num
-    .toLocaleString("id-ID", {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4
-    });
-}
-
-/* =============================
-   PROFIT 20 JT
-============================= */
-function hitungProfit1(sellingRate, buyingRate) {
-  const jumlahGram = nilaiEmas / buyingRate;
-  const totalJual = jumlahGram * sellingRate;
-
-  const profitRupiah = totalJual - modalBayar1;
-  const profitGram = profitRupiah / sellingRate;
-
-  return { profitRupiah, profitGram, jumlahGram };
-}
-
-function updateProfitUI1(sellingRate, buyingRate) {
-  if (lastProfitRate1 === sellingRate) return;
-  lastProfitRate1 = sellingRate;
-
-  const { profitRupiah, profitGram, jumlahGram } = hitungProfit1(sellingRate, buyingRate);
-
-  const profitEl = document.getElementById("profit");
-
-  const profitRpFormatted = profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 });
-  const profitGramFormatted = formatDecimal(profitGram);
-  const jumlahGramFormatted = formatDecimal(jumlahGram);
-
-  profitEl.innerHTML = `
-    Profit 20jt: Rp ${profitRpFormatted} (${profitGramFormatted} gr)<br>
-    Jumlah Emas: ${jumlahGramFormatted} gr
-  `;
-}
-
-/* =============================
-   PROFIT 30 JT (DISKON)
-============================= */
-function hitungProfit2(sellingRate, buyingRate) {
-  const jumlahGram = nilaiEmas / buyingRate;
-  const totalJual = jumlahGram * sellingRate;
-
-  const modalSetelahDiskon = modalBayar2 - diskon2;
-
-  const profitRupiah = totalJual - modalSetelahDiskon;
-  const profitGram = profitRupiah / sellingRate;
-
-  return { profitRupiah, profitGram, jumlahGram };
-}
-
-function updateProfitUI2(sellingRate, buyingRate) {
-  if (lastProfitRate2 === sellingRate) return;
-  lastProfitRate2 = sellingRate;
-
-  const { profitRupiah, profitGram, jumlahGram } = hitungProfit2(sellingRate, buyingRate);
-
-  const profitEl = document.getElementById("profit2");
-
-  const profitRpFormatted = profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 });
-  const profitGramFormatted = formatDecimal(profitGram);
-  const jumlahGramFormatted = formatDecimal(jumlahGram);
-
-  profitEl.innerHTML = `
-    Profit 30jt: Rp ${profitRpFormatted} (${profitGramFormatted} gr)<br>
-    Jumlah Emas: ${jumlahGramFormatted} gr
-  `;
-}
-
-/* =============================
-   LOAD API
-============================= */
 async function loadGold() {
   try {
     const res = await fetch("/api/gold");
@@ -222,13 +205,11 @@ async function loadGold() {
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
-    document.getElementById("time").innerText = new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
+    document.getElementById("time").innerText =
+      new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
 
     const buyEl = document.getElementById("buy");
     const sellEl = document.getElementById("sell");
-
-    const buyDiffEl = document.getElementById("buyDiff");
-    const sellDiffEl = document.getElementById("sellDiff");
 
     /* BUY */
     if (lastBuy !== null && buy !== lastBuy) {
@@ -237,7 +218,7 @@ async function loadGold() {
       buyEl.classList.add(diff > 0 ? "green" : "red", "fade");
     }
     buyEl.innerText = formatNumber(buy);
-    buyDiffEl.innerHTML =
+    buyDiff.innerHTML =
       lastBuyDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
       lastBuyDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
       `<span class="neutral">(0)</span>`;
@@ -249,17 +230,18 @@ async function loadGold() {
       sellEl.classList.add(diff > 0 ? "green" : "red", "fade");
     }
     sellEl.innerText = formatNumber(sell);
-    sellDiffEl.innerHTML =
+    sellDiff.innerHTML =
       lastSellDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
       lastSellDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
       `<span class="neutral">(0)</span>`;
 
+    /* SPREAD */
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
     /* PROFIT */
-    updateProfitUI1(sell, buy);
-    updateProfitUI2(sell, buy);
+    updateProfitUI20(sell, buy);
+    updateProfitUI30(sell, buy);
 
     lastBuy = buy;
     lastSell = sell;
