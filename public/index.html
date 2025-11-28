@@ -6,120 +6,94 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
-    margin: 0;
-    overflow-x: hidden;
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* center card & chart */
+  padding-top: 20px;
+}
+
+/* CARD HARGA */
+.card {
+  background: #1a1a1a;
+  padding: 20px 24px;
+  border-radius: 12px;
+  width: 420px; /* lebih besar dari sebelumnya */
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  border: 1px solid #222;
+}
+
+h1 { font-size: 18px; margin: 0 0 10px 0; text-align:center; }
+.time { text-align:center;color:#bbb;font-size:13px;margin-bottom:12px; }
+.row { margin: 12px 0; }
+.label { color:#aaa;font-size:13px; }
+.value { font-size:22px;font-weight:700; }
+.diff { font-size:12px;margin-top:4px; }
+.green { color:#4caf50; }
+.red { color:#ff6b6b; }
+.neutral { color:#999; }
+.fade { animation:pulse .25s ease-out; }
+
+@keyframes pulse {
+  from { transform:scale(1.06); opacity:.2 }
+  to   { transform:scale(1); opacity:1 }
+}
+
+#spread { margin-top:14px; text-align:center; font-weight:600; color:#f0e68c; }
+#profit, #profit2 { margin-top:14px; text-align:center; font-weight:bold; }
+
+/* CHART LEBAR SAMA DENGAN CARD */
+#chartWrapper {
+  width: 420px; /* sesuaikan dengan card */
+  height: 500px;
+  margin-top: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+}
+
+/* Responsif HP */
+@media(max-width:480px){
+  .card, #chartWrapper {
+    width: 90%; /* otomatis mengecil di HP */
   }
-
-  /* WRAPPER UTAMA */
-  .container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* center di layar PC/HP */
-    padding-top: 20px;
-  }
-
-  /* CARD HARGA */
-  .card {
-    background: #1a1a1a;
-    padding: 20px 24px;
-    border-radius: 12px;
-    width: 360px; /* ukuran acuan */
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    border: 1px solid #222;
-  }
-
-  h1 {
-    font-size: 18px;
-    margin: 0 0 10px 0;
-    text-align: center;
-  }
-
-  .time { text-align:center;color:#bbb;font-size:13px;margin-bottom:12px; }
-
-  .row { margin: 12px 0; }
-  .label { color:#aaa;font-size:13px; }
-  .value { font-size:22px;font-weight:700; }
-  .diff { font-size:12px;margin-top:4px; }
-
-  .green { color:#4caf50; }
-  .red { color:#ff6b6b; }
-  .neutral { color:#999; }
-  .fade { animation:pulse .25s ease-out; }
-
-  @keyframes pulse {
-    from { transform:scale(1.06); opacity:.2 }
-    to   { transform:scale(1); opacity:1 }
-  }
-
-  #spread {
-    margin-top: 14px;
-    text-align: center;
-    font-weight: 600;
-    color: #f0e68c;
-  }
-
-  #profit, #profit2 {
-    margin-top: 14px;
-    text-align: center;
-    font-weight: bold;
-  }
-
-  /* CHART LEBAR SAMA DENGAN CARD */
-  #chartWrapper {
-    width: 360px;         /* sesuai card */
-    height: 500px;        /* tinggi standard */
-    margin-top: 20px;     /* jarak card ke chart */
-    border-radius: 12px;
-    overflow: hidden;
-    background: #000;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  }
-
-  /* Responsif HP */
-  @media(max-width:480px){
-    .card, #chartWrapper {
-      width: 90%; /* otomatis mengikuti layar HP */
-    }
-  }
-
+}
 </style>
 </head>
-
 <body>
 
 <div class="container">
 
   <!-- CARD HARGA -->
   <div class="card">
-
     <h1>Realtime Gold Price</h1>
     <div id="time" class="time">--:--:--</div>
-
     <div class="row">
       <div class="label">Buying Rate</div>
       <div id="buy" class="value">Loading...</div>
       <div id="buyDiff" class="diff neutral">(0)</div>
     </div>
-
     <div class="row">
       <div class="label">Selling Rate</div>
       <div id="sell" class="value">Loading...</div>
       <div id="sellDiff" class="diff neutral">(0)</div>
     </div>
-
     <div id="spread">Spread: -</div>
-
     <div id="profit">Profit 20jt: -</div>
     <div id="profit2">Profit 30jt: -</div>
-
   </div>
 
-  <!-- CHART SAMA LEBAR DENGAN CARD -->
+  <!-- CHART SESUAI LEBAR CARD -->
   <div id="chartWrapper">
     <div class="tradingview-widget-container" style="width:100%;height:100%;">
       <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
@@ -150,81 +124,58 @@ function getJakartaTimeString() {
     hour12: false
   });
 }
-setInterval(() => {
-  document.getElementById("time").innerText = getJakartaTimeString();
-}, 1000);
+setInterval(()=>{document.getElementById("time").innerText=getJakartaTimeString()},1000);
 
-/* Profit / API (kode asli Anda tetap dipakai) */
-const nilaiEmas20 = 20000000, modal20 = nilaiEmas20 - 685000;
-const nilaiEmas30 = 30000000, modal30 = nilaiEmas30 - 1020000;
+/* Profit / API */
+const nilaiEmas20=20000000,modal20=nilaiEmas20-685000;
+const nilaiEmas30=30000000,modal30=nilaiEmas30-1020000;
 
 function formatDecimal(n){ return n.toLocaleString("id-ID",{minimumFractionDigits:4}) }
 function formatNumber(n){ return n.toLocaleString("id-ID") }
 
 function hitungProfit20(sell,buy){
-  const g = nilaiEmas20/buy, jual=g*sell, p=jual-modal20;
-  return { profitRupiah:p, profitGram:p/sell, jumlahGram:g };
+  const g=nilaiEmas20/buy,j=g*sell,p=j-modal20;
+  return {profitRupiah:p,profitGram:p/sell,jumlahGram:g};
 }
-
 function hitungProfit30(sell,buy){
-  const g = nilaiEmas30/buy, jual=g*sell, p=jual-modal30;
-  return { profitRupiah:p, profitGram:p/sell, jumlahGram:g };
+  const g=nilaiEmas30/buy,j=g*sell,p=j-modal30;
+  return {profitRupiah:p,profitGram:p/sell,jumlahGram:g};
 }
-
 function updateAllProfit(sell,buy){
-  const a = hitungProfit20(sell,buy);
-  document.getElementById("profit").innerHTML =
-    `Profit 20jt: Rp ${a.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
-    (${formatDecimal(a.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(a.jumlahGram)} gr`;
-
-  const b = hitungProfit30(sell,buy);
-  document.getElementById("profit2").innerHTML =
-    `Profit 30jt: Rp ${b.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
-    (${formatDecimal(b.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(b.jumlahGram)} gr`;
+  const a=hitungProfit20(sell,buy);
+  document.getElementById("profit").innerHTML=
+    `Profit 20jt: Rp ${a.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(a.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(a.jumlahGram)} gr`;
+  const b=hitungProfit30(sell,buy);
+  document.getElementById("profit2").innerHTML=
+    `Profit 30jt: Rp ${b.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(b.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(b.jumlahGram)} gr`;
 }
 
 let lastBuy=null,lastSell=null,lastBuyDiff=0,lastSellDiff=0;
 
-async function loadGold() {
-  try {
-    const res = await fetch("/api/gold");
-    const d = await res.json();
-    const buy = parseFloat(d.buying_rate);
-    const sell = parseFloat(d.selling_rate);
-
+async function loadGold(){
+  try{
+    const res=await fetch("/api/gold");
+    const d=await res.json();
+    const buy=parseFloat(d.buying_rate);
+    const sell=parseFloat(d.selling_rate);
     const buyEl=document.getElementById("buy");
     const sellEl=document.getElementById("sell");
     const buyDiff=document.getElementById("buyDiff");
     const sellDiff=document.getElementById("sellDiff");
-
-    if(lastBuy!==null && buy!==lastBuy) lastBuyDiff = buy-lastBuy;
-    if(lastSell!==null && sell!==lastSell) lastSellDiff = sell-lastSell;
-
-    buyEl.innerText = formatNumber(buy);
-    sellEl.innerText = formatNumber(sell);
-
-    buyDiff.innerHTML =
-      lastBuyDiff>0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
-      lastBuyDiff<0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
-      `<span class="neutral">(0)</span>`;
-
-    sellDiff.innerHTML =
-      lastSellDiff>0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
-      lastSellDiff<0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
-      `<span class="neutral">(0)</span>`;
-
-    document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
-
-    updateAllProfit(sell, buy);
-
-    lastBuy = buy;
-    lastSell = sell;
-
-  } catch(e){ console.error(e); }
+    if(lastBuy!==null && buy!==lastBuy) lastBuyDiff=buy-lastBuy;
+    if(lastSell!==null && sell!==lastSell) lastSellDiff=sell-lastSell;
+    buyEl.innerText=formatNumber(buy);
+    sellEl.innerText=formatNumber(sell);
+    buyDiff.innerHTML=lastBuyDiff>0?`<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`:
+                        lastBuyDiff<0?`<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`:`<span class="neutral">(0)</span>`;
+    sellDiff.innerHTML=lastSellDiff>0?`<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`:
+                        lastSellDiff<0?`<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`:`<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText="Spread: "+formatNumber(buy-sell);
+    updateAllProfit(sell,buy);
+    lastBuy=buy; lastSell=sell;
+  }catch(e){console.error(e);}
 }
-
-loadGold();
-setInterval(loadGold, 1000);
+loadGold(); setInterval(loadGold,1000);
 </script>
 
 </body>
