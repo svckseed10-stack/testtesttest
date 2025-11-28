@@ -116,29 +116,27 @@
 /* =============================
    KONFIGURASI MODAL FINAL
 ============================= */
-
-// VARIAN 20 JUTA
 const nilaiEmas20 = 20000000;
-const modal20 = 20000000 - 685000; // = 19.315.000
+const modal20 = 20000000 - 685000;   // 19.315.000
 
-// VARIAN 30 JUTA
 const nilaiEmas30 = 30000000;
-const modal30 = 30000000 - 1020000; // = 28.980.000
+const modal30 = 30000000 - 1020000;  // 28.980.000
 
 
 /* =============================
    FORMAT ANGKA
 ============================= */
 function formatDecimal(num) {
-  return num.toLocaleString("id-ID", {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4
-  });
+  return num.toLocaleString("id-ID", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+}
+
+function formatNumber(n) {
+  return n.toLocaleString("id-ID");
 }
 
 
 /* =============================
-   PROFIT 20 JUTA
+   PROFIT VARIAN 20 JT
 ============================= */
 function hitungProfit20(sellingRate, buyingRate) {
   const jumlahGram = nilaiEmas20 / buyingRate;
@@ -152,7 +150,6 @@ function hitungProfit20(sellingRate, buyingRate) {
 
 function updateProfitUI20(sellingRate, buyingRate) {
   const out = hitungProfit20(sellingRate, buyingRate);
-
   document.getElementById("profit").innerHTML = `
     Profit 20jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
     (${formatDecimal(out.profitGram)} gr)<br>
@@ -162,7 +159,7 @@ function updateProfitUI20(sellingRate, buyingRate) {
 
 
 /* =============================
-   PROFIT 30 JUTA
+   PROFIT VARIAN 30 JT
 ============================= */
 function hitungProfit30(sellingRate, buyingRate) {
   const jumlahGram = nilaiEmas30 / buyingRate;
@@ -176,7 +173,6 @@ function hitungProfit30(sellingRate, buyingRate) {
 
 function updateProfitUI30(sellingRate, buyingRate) {
   const out = hitungProfit30(sellingRate, buyingRate);
-
   document.getElementById("profit2").innerHTML = `
     Profit 30jt: Rp ${out.profitRupiah.toLocaleString("id-ID", { minimumFractionDigits: 3 })}
     (${formatDecimal(out.profitGram)} gr)<br>
@@ -184,80 +180,103 @@ function updateProfitUI30(sellingRate, buyingRate) {
   `;
 }
 
+function updateAllProfit(sell, buy) {
+  updateProfitUI20(sell, buy);
+  updateProfitUI30(sell, buy);
+}
+
 
 /* =============================
-   LOAD DATA API
+   UPDATE WAKTU REaltime WIB
+============================= */
+function getJakartaTimeString() {
+  return new Date().toLocaleTimeString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function updateTime() {
+  document.getElementById("time").innerText = getJakartaTimeString();
+}
+
+setInterval(updateTime, 1000);
+updateTime();
+
+
+/* =============================
+   LOAD DATA EMAS REaltime
 ============================= */
 let lastBuy = null;
 let lastSell = null;
 let lastBuyDiff = 0;
 let lastSellDiff = 0;
 
-function formatNumber(n) {
-  return n.toLocaleString("id-ID");
-}
-
 async function loadGold() {
   try {
-    const res = await fetch("/api/gold");
+    const res = await fetch("/api/gold"); // pastikan endpoint tersedia
     const data = await res.json();
 
     const buy = parseFloat(data.buying_rate);
     const sell = parseFloat(data.selling_rate);
 
-    document.getElementById("time").innerText =
-      new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
-
     const buyEl = document.getElementById("buy");
+    const buyDiffEl = document.getElementById("buyDiff");
     const sellEl = document.getElementById("sell");
+    const sellDiffEl = document.getElementById("sellDiff");
 
-    /* BUY */
-    if (lastBuy !== null && buy !== lastBuy) {
+    buyEl.classList.remove("green","red","fade");
+    sellEl.classList.remove("green","red","fade");
+
+    /* ===== BUY ===== */
+    if(lastBuy !== null && buy !== lastBuy){
       const diff = buy - lastBuy;
       lastBuyDiff = diff;
-      buyEl.classList.add(diff > 0 ? "green" : "red", "fade");
+      buyEl.classList.add(diff>0?"green":"red","fade");
     }
     buyEl.innerText = formatNumber(buy);
-    buyDiff.innerHTML =
-      lastBuyDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
-      lastBuyDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
-      `<span class="neutral">(0)</span>`;
+    buyDiffEl.innerHTML = lastBuyDiff>0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
+                              lastBuyDiff<0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
+                              `<span class="neutral">(0)</span>`;
 
-    /* SELL */
-    if (lastSell !== null && sell !== lastSell) {
+    /* ===== SELL ===== */
+    if(lastSell !== null && sell !== lastSell){
       const diff = sell - lastSell;
       lastSellDiff = diff;
-      sellEl.classList.add(diff > 0 ? "green" : "red", "fade");
+      sellEl.classList.add(diff>0?"green":"red","fade");
     }
     sellEl.innerText = formatNumber(sell);
-    sellDiff.innerHTML =
-      lastSellDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
-      lastSellDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
-      `<span class="neutral">(0)</span>`;
+    sellDiffEl.innerHTML = lastSellDiff>0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
+                               lastSellDiff<0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
+                               `<span class="neutral">(0)</span>`;
 
-    /* SPREAD */
-    document.getElementById("spread").innerText =
-      "Spread: " + formatNumber(buy - sell);
+    /* ===== SPREAD ===== */
+    document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
 
-    /* PROFIT */
-    updateProfitUI20(sell, buy);
-    updateProfitUI30(sell, buy);
+    /* ===== PROFIT ===== */
+    updateAllProfit(sell, buy);
 
     lastBuy = buy;
     lastSell = sell;
 
-  } catch (err) {
+  } catch(err){
     console.error(err);
-    document.getElementById("buy").innerText = "Error";
-    document.getElementById("sell").innerText = "Error";
+    buyEl.innerText = "Error";
+    sellEl.innerText = "Error";
+    buyDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+    sellDiffEl.innerHTML = `<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText = "Spread: -";
     document.getElementById("profit").innerText = "Profit 20jt: -";
     document.getElementById("profit2").innerText = "Profit 30jt: -";
   }
 }
 
 loadGold();
-setInterval(loadGold, 1000);
-</script>
+setInterval(loadGold, 1000); // update harga tiap detik
 
+</script>
 </body>
 </html>
