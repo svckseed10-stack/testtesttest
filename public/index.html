@@ -1,189 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: #fff;
-  margin: 0;
-  overflow-x: hidden;
-}
-
-.container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 20px;
-}
-
-.card {
-  background: #1a1a1a;
-  padding: 20px 24px;
-  border-radius: 12px;
-  width: 420px; /* lebar card utama */
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  border: 1px solid #222;
-}
-
-h1 { font-size: 18px; margin: 0 0 10px; text-align:center; }
-.time { text-align:center;color:#bbb;font-size:13px;margin-bottom:12px; }
-.row { margin: 12px 0; }
-.label { color:#aaa;font-size:13px; }
-.value { font-size:22px;font-weight:700; }
-.diff { font-size:12px;margin-top:4px; }
-.green { color:#4caf50; }
-.red { color:#ff6b6b; }
-.neutral { color:#999; }
-.fade { animation:pulse .25s ease-out; }
-
-@keyframes pulse {
-  from { transform:scale(1.06); opacity:.2 }
-  to   { transform:scale(1); opacity:1 }
-}
-
-#spread { margin-top:14px; text-align:center; font-weight:600; color:#f0e68c; }
-#profit, #profit2 { margin-top:14px; text-align:center; font-weight:bold; }
-
-#chartWrapper {
-  width: 420px; /* sama dengan card */
-  height: 500px;
-  margin-top: 20px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-}
-
-/* Responsif HP */
-@media(max-width:480px){
-  .card, #chartWrapper {
-    width: 90%; /* otomatis mengecil di HP */
+  /* ===================================
+     RESET & BODY
+  =================================== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr; /* card + chart */
+    overflow: hidden;
   }
-}
+
+  /* ===================================
+     CARD UTAMA DI ATAS
+  =================================== */
+  .card {
+    background: #1a1a1a;
+    padding: 20px 24px;
+    border-radius: 12px;
+    width: 360px;
+    margin: 20px auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 1px solid #222;
+    text-align: center;
+    z-index: 10;
+  }
+
+  h1 { font-size: 18px; margin-bottom: 10px; }
+  .time { color: #bbb; font-size: 13px; margin-bottom: 12px; }
+
+  .row { margin: 12px 0; }
+  .label { color: #aaa; font-size: 13px; }
+  .value { font-size: 22px; font-weight: 700; }
+  .diff { font-size: 12px; margin-top: 4px; }
+
+  .green { color: #4caf50; }
+  .red { color: #ff6b6b; }
+  .neutral { color: #999; }
+
+  .fade { animation: pulse 0.25s ease-out; }
+  @keyframes pulse { from { transform: scale(1.06); opacity: .2 } to { transform: scale(1); opacity: 1 } }
+
+  #spread, #profit, #profit2 {
+    margin-top: 14px;
+    font-weight: 600;
+  }
+  #spread { color: #f0e68c; }
+
+  /* ===================================
+     CHART FULL AUTO SIZE
+  =================================== */
+  #chartWrapper {
+    width: 100%;
+    height: 100%;
+  }
 </style>
 </head>
+
 <body>
 
-<div class="container">
+<!-- CARD UTAMA -->
+<div class="card">
+  <h1>Realtime Gold Price</h1>
+  <div id="time" class="time">--:--:--</div>
 
-  <!-- CARD HARGA -->
-  <div class="card">
-    <h1>Realtime Gold Price</h1>
-    <div id="time" class="time">--:--:--</div>
-    <div class="row">
-      <div class="label">Buying Rate</div>
-      <div id="buy" class="value">Loading...</div>
-      <div id="buyDiff" class="diff neutral">(0)</div>
-    </div>
-    <div class="row">
-      <div class="label">Selling Rate</div>
-      <div id="sell" class="value">Loading...</div>
-      <div id="sellDiff" class="diff neutral">(0)</div>
-    </div>
-    <div id="spread">Spread: -</div>
-    <div id="profit">Profit 20jt: -</div>
-    <div id="profit2">Profit 30jt: -</div>
+  <div class="row">
+    <div class="label">Buying Rate</div>
+    <div id="buy" class="value">Loading...</div>
+    <div id="buyDiff" class="diff neutral">(0)</div>
   </div>
 
-  <!-- CHART SESUAI LEBAR CARD -->
-  <div id="chartWrapper">
-    <div id="tradingview_chart" style="width:100%; height:100%;"></div>
+  <div class="row">
+    <div class="label">Selling Rate</div>
+    <div id="sell" class="value">Loading...</div>
+    <div id="sellDiff" class="diff neutral">(0)</div>
   </div>
 
+  <div id="spread">Spread: -</div>
+  <div id="profit">Profit 20jt: -</div>
+  <div id="profit2">Profit 30jt: -</div>
 </div>
 
-<!-- TradingView JS -->
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-<script>
-  function initTradingView(){
-    const cardWidth = document.querySelector('.card').offsetWidth;
-
-    window.tvWidget = new TradingView.widget({
-      "width": cardWidth,
-      "height": 500,
+<!-- CHART FULL -->
+<div id="chartWrapper">
+  <div class="tradingview-widget-container" style="width:100%;height:100%;">
+    <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
+    <script type="text/javascript"
+      src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+    {
+      "autosize": true,
       "symbol": "XAUUSD",
       "interval": "D",
       "timezone": "Asia/Jakarta",
       "theme": "dark",
       "style": "1",
       "locale": "en",
-      "container_id": "tradingview_chart"
-    });
+      "backgroundColor": "#000000",
+      "gridColor": "rgba(255,255,255,0.05)"
+    }
+    </script>
+  </div>
+</div>
 
-    // Resize otomatis saat window berubah
-    window.addEventListener('resize', ()=>{
-      const newWidth = document.querySelector('.card').offsetWidth;
-      tvWidget.resize(newWidth, 500);
-    });
-  }
-
-  initTradingView();
-</script>
-
-<!-- Realtime Waktu & Profit -->
 <script>
+/* ========================================
+   PROFIT & FUNGSI UTAMA
+======================================== */
+const nilaiEmas20 = 20000000;
+const modal20 = 20000000 - 685000;
+const nilaiEmas30 = 30000000;
+const modal30 = 30000000 - 1020000;
+
+function formatDecimal(num) {
+  return num.toLocaleString("id-ID", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+}
+function formatNumber(n) { return n.toLocaleString("id-ID"); }
+
+/* PROFIT 20JT */
+function hitungProfit20(sell, buy) {
+  const jumlahGram = nilaiEmas20 / buy;
+  const totalJual = jumlahGram * sell;
+  const profitRupiah = totalJual - modal20;
+  const profitGram = profitRupiah / sell;
+  return { profitRupiah, profitGram, jumlahGram };
+}
+function updateProfitUI20(sell, buy) {
+  const o = hitungProfit20(sell, buy);
+  document.getElementById("profit").innerHTML = `
+    Profit 20jt: Rp ${o.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
+    (${formatDecimal(o.profitGram)} gr)<br>
+    Jumlah Emas: ${formatDecimal(o.jumlahGram)} gr
+  `;
+}
+
+/* PROFIT 30JT */
+function hitungProfit30(sell, buy) {
+  const jumlahGram = nilaiEmas30 / buy;
+  const totalJual = jumlahGram * sell;
+  const profitRupiah = totalJual - modal30;
+  const profitGram = profitRupiah / sell;
+  return { profitRupiah, profitGram, jumlahGram };
+}
+function updateProfitUI30(sell, buy) {
+  const o = hitungProfit30(sell, buy);
+  document.getElementById("profit2").innerHTML = `
+    Profit 30jt: Rp ${o.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
+    (${formatDecimal(o.profitGram)} gr)<br>
+    Jumlah Emas: ${formatDecimal(o.jumlahGram)} gr
+  `;
+}
+
+function updateAllProfit(sell, buy) {
+  updateProfitUI20(sell, buy);
+  updateProfitUI30(sell, buy);
+}
+
+/* WAKTU */
 function getJakartaTimeString() {
-  return new Date().toLocaleTimeString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour12: false
-  });
+  return new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta", hour12: false });
 }
-setInterval(()=>{document.getElementById("time").innerText=getJakartaTimeString()},1000);
+function updateTime() {
+  document.getElementById("time").innerText = getJakartaTimeString();
+}
+setInterval(updateTime, 1000);
+updateTime();
 
-const nilaiEmas20=20000000, modal20=nilaiEmas20-685000;
-const nilaiEmas30=30000000, modal30=nilaiEmas30-1020000;
+/* LOAD DATA API */
+let lastBuy = null;
+let lastSell = null;
+let lastBuyDiff = 0;
+let lastSellDiff = 0;
 
-function formatDecimal(n){ return n.toLocaleString("id-ID",{minimumFractionDigits:4}) }
-function formatNumber(n){ return n.toLocaleString("id-ID") }
+async function loadGold() {
+  try {
+    const res = await fetch("/api/gold");
+    const data = await res.json();
+    const buy = parseFloat(data.buying_rate);
+    const sell = parseFloat(data.selling_rate);
 
-function hitungProfit20(sell,buy){
-  const g=nilaiEmas20/buy,j=g*sell,p=j-modal20;
-  return {profitRupiah:p, profitGram:p/sell, jumlahGram:g};
-}
-function hitungProfit30(sell,buy){
-  const g=nilaiEmas30/buy,j=g*sell,p=j-modal30;
-  return {profitRupiah:p, profitGram:p/sell, jumlahGram:g};
-}
-function updateAllProfit(sell,buy){
-  const a=hitungProfit20(sell,buy);
-  document.getElementById("profit").innerHTML=
-    `Profit 20jt: Rp ${a.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(a.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(a.jumlahGram)} gr`;
-  const b=hitungProfit30(sell,buy);
-  document.getElementById("profit2").innerHTML=
-    `Profit 30jt: Rp ${b.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(b.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(b.jumlahGram)} gr`;
+    const buyEl = document.getElementById("buy");
+    const buyDiffEl = document.getElementById("buyDiff");
+    const sellEl = document.getElementById("sell");
+    const sellDiffEl = document.getElementById("sellDiff");
+
+    buyEl.classList.remove("green","red","fade");
+    sellEl.classList.remove("green","red","fade");
+
+    if (lastBuy !== null && buy !== lastBuy) {
+      const diff = buy - lastBuy;
+      lastBuyDiff = diff;
+      buyEl.classList.add(diff > 0 ? "green" : "red", "fade");
+    }
+    buyEl.innerText = formatNumber(buy);
+    buyDiffEl.innerHTML =
+      lastBuyDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
+      lastBuyDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
+
+    if (lastSell !== null && sell !== lastSell) {
+      const diff = sell - lastSell;
+      lastSellDiff = diff;
+      sellEl.classList.add(diff > 0 ? "green" : "red", "fade");
+    }
+    sellEl.innerText = formatNumber(sell);
+    sellDiffEl.innerHTML =
+      lastSellDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
+      lastSellDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
+
+    document.getElementById("spread").innerText = "Spread: " + formatNumber(buy - sell);
+    updateAllProfit(sell, buy);
+
+    lastBuy = buy;
+    lastSell = sell;
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-let lastBuy=null,lastSell=null,lastBuyDiff=0,lastSellDiff=0;
-async function loadGold(){
-  try{
-    const res=await fetch("/api/gold");
-    const d=await res.json();
-    const buy=parseFloat(d.buying_rate);
-    const sell=parseFloat(d.selling_rate);
-    const buyEl=document.getElementById("buy");
-    const sellEl=document.getElementById("sell");
-    const buyDiff=document.getElementById("buyDiff");
-    const sellDiff=document.getElementById("sellDiff");
-    if(lastBuy!==null && buy!==lastBuy) lastBuyDiff=buy-lastBuy;
-    if(lastSell!==null && sell!==lastSell) lastSellDiff=sell-lastSell;
-    buyEl.innerText=formatNumber(buy);
-    sellEl.innerText=formatNumber(sell);
-    buyDiff.innerHTML=lastBuyDiff>0?`<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`:
-                        lastBuyDiff<0?`<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`:`<span class="neutral">(0)</span>`;
-    sellDiff.innerHTML=lastSellDiff>0?`<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`:
-                        lastSellDiff<0?`<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`:`<span class="neutral">(0)</span>`;
-    document.getElementById("spread").innerText="Spread: "+formatNumber(buy-sell);
-    updateAllProfit(sell,buy);
-    lastBuy=buy; lastSell=sell;
-  }catch(e){console.error(e);}
-}
-loadGold(); setInterval(loadGold,1000);
+loadGold();
+setInterval(loadGold, 1000);
 </script>
 
 </body>
