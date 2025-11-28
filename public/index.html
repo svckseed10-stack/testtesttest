@@ -11,10 +11,19 @@
     background: #111;
     color: #fff;
     margin: 0;
-    overflow: hidden; /* fullscreen clean */
+    overflow-x: hidden;
   }
 
-  /* CARD UTAMA DI ATAS */
+  /* WRAPPER PUSAT */
+  .container {
+    width: 100%;
+    max-width: 1200px; /* BATAS LEBAR AGAR TIDAK KELEBARAN DI PC */
+    margin: 0 auto;
+    padding-top: 20px;
+    position: relative;
+  }
+
+  /* CARD */
   .card {
     background: #1a1a1a;
     padding: 20px 24px;
@@ -23,11 +32,9 @@
     box-shadow: 0 8px 30px rgba(0,0,0,0.6);
     border: 1px solid #222;
 
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    margin: 0 auto;
     z-index: 10;
+    position: relative;
   }
 
   h1 {
@@ -43,32 +50,15 @@
     margin-bottom: 12px;
   }
 
-  .row {
-    margin: 12px 0;
-  }
-
-  .label {
-    color: #aaa;
-    font-size: 13px;
-  }
-
-  .value {
-    font-size: 22px;
-    font-weight: 700;
-  }
-
-  .diff {
-    font-size: 12px;
-    margin-top: 4px;
-  }
-
+  .row { margin: 12px 0; }
+  .label { color: #aaa; font-size: 13px; }
+  .value { font-size: 22px; font-weight: 700; }
+  .diff { font-size: 12px; margin-top: 4px; }
   .green { color: #4caf50; }
   .red { color: #ff6b6b; }
   .neutral { color: #999; }
 
-  .fade {
-    animation: pulse 0.25s ease-out;
-  }
+  .fade { animation: pulse 0.25s ease-out; }
 
   @keyframes pulse {
     from { transform: scale(1.06); opacity: .2 }
@@ -88,150 +78,74 @@
     font-weight: 600;
   }
 
-  /* CHART AUTO FIT */
+  /* CHART WRAPPER */
   #chartWrapper {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    width: 100vw;
-    height: auto;
-    z-index: 0;
+    width: 100%;
+    height: 70vh; /* Tinggi ideal untuk PC & HP */
+    margin: 20px auto;
+    max-width: 1200px; /* batas aman untuk layar PC */
+    border-radius: 12px;
+    overflow: hidden;
   }
 </style>
 </head>
 
 <body>
 
-<!-- CARD UTAMA -->
-<div class="card">
+<div class="container">
 
-  <h1>Realtime Gold Price</h1>
-  <div id="time" class="time">--:--:--</div>
+  <!-- CARD -->
+  <div class="card">
 
-  <div class="row">
-    <div class="label">Buying Rate</div>
-    <div id="buy" class="value">Loading...</div>
-    <div id="buyDiff" class="diff neutral">(0)</div>
-  </div>
+    <h1>Realtime Gold Price</h1>
+    <div id="time" class="time">--:--:--</div>
 
-  <div class="row">
-    <div class="label">Selling Rate</div>
-    <div id="sell" class="value">Loading...</div>
-    <div id="sellDiff" class="diff neutral">(0)</div>
-  </div>
+    <div class="row">
+      <div class="label">Buying Rate</div>
+      <div id="buy" class="value">Loading...</div>
+      <div id="buyDiff" class="diff neutral">(0)</div>
+    </div>
 
-  <div id="spread">Spread: -</div>
+    <div class="row">
+      <div class="label">Selling Rate</div>
+      <div id="sell" class="value">Loading...</div>
+      <div id="sellDiff" class="diff neutral">(0)</div>
+    </div>
 
-  <div id="profit">Profit 20jt: -</div>
-  <div id="profit2">Profit 30jt: -</div>
+    <div id="spread">Spread: -</div>
 
-</div>
-
-<!-- CHART FULL AUTO SIZE -->
-<div id="chartWrapper">
-  <div class="tradingview-widget-container" style="width:100%;height:100%;">
-    <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
-
-    <script type="text/javascript"
-      src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-    {
-      "autosize": true,
-      "symbol": "XAUUSD",
-      "interval": "D",
-      "timezone": "Asia/Jakarta",
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "backgroundColor": "#000000",
-      "gridColor": "rgba(255,255,255,0.05)"
-    }
-    </script>
+    <div id="profit">Profit 20jt: -</div>
+    <div id="profit2">Profit 30jt: -</div>
 
   </div>
+
+  <!-- CHART -->
+  <div id="chartWrapper">
+    <div class="tradingview-widget-container" style="width:100%;height:100%;">
+      <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
+
+      <script type="text/javascript"
+        src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+      {
+        "autosize": true,
+        "symbol": "XAUUSD",
+        "interval": "D",
+        "timezone": "Asia/Jakarta",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "backgroundColor": "#000000",
+        "gridColor": "rgba(255,255,255,0.05)"
+      }
+      </script>
+
+    </div>
+  </div>
+
 </div>
 
 <script>
-/* ========================================
-   AUTO POSITION CHART DI BAWAH CARD
-======================================== */
-function adjustChartTop() {
-  const card = document.querySelector(".card");
-  const chart = document.getElementById("chartWrapper");
-
-  const cardHeight = card.offsetHeight + 30; // 30px margin bawah
-
-  chart.style.top = cardHeight + "px";
-  chart.style.height = `calc(100vh - ${cardHeight}px)`;
-}
-
-window.onload = adjustChartTop;
-window.onresize = adjustChartTop;
-
-
-/* ========================================
-   PROFIT & FUNGSI UTAMA (ASLI KODE ANDA)
-======================================== */
-const nilaiEmas20 = 20000000;
-const modal20 = 20000000 - 685000;
-
-const nilaiEmas30 = 30000000;
-const modal30 = 30000000 - 1020000;
-
-function formatDecimal(num) {
-  return num.toLocaleString("id-ID", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-}
-function formatNumber(n) {
-  return n.toLocaleString("id-ID");
-}
-
-/* PROFIT 20JT */
-function hitungProfit20(sell, buy) {
-  const jumlahGram = nilaiEmas20 / buy;
-  const totalJual = jumlahGram * sell;
-
-  const profitRupiah = totalJual - modal20;
-  const profitGram = profitRupiah / sell;
-
-  return { profitRupiah, profitGram, jumlahGram };
-}
-
-function updateProfitUI20(sell, buy) {
-  const o = hitungProfit20(sell, buy);
-  document.getElementById("profit").innerHTML = `
-    Profit 20jt: Rp ${o.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
-    (${formatDecimal(o.profitGram)} gr)<br>
-    Jumlah Emas: ${formatDecimal(o.jumlahGram)} gr
-  `;
-}
-
-/* PROFIT 30JT */
-function hitungProfit30(sell, buy) {
-  const jumlahGram = nilaiEmas30 / buy;
-  const totalJual = jumlahGram * sell;
-
-  const profitRupiah = totalJual - modal30;
-  const profitGram = profitRupiah / sell;
-
-  return { profitRupiah, profitGram, jumlahGram };
-}
-
-function updateProfitUI30(sell, buy) {
-  const o = hitungProfit30(sell, buy);
-  document.getElementById("profit2").innerHTML = `
-    Profit 30jt: Rp ${o.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})}
-    (${formatDecimal(o.profitGram)} gr)<br>
-    Jumlah Emas: ${formatDecimal(o.jumlahGram)} gr
-  `;
-}
-
-function updateAllProfit(sell, buy) {
-  updateProfitUI20(sell, buy);
-  updateProfitUI30(sell, buy);
-}
-
-/* WAKTU */
+/* Waktu */
 function getJakartaTimeString() {
   return new Date().toLocaleTimeString("id-ID", {
     timeZone: "Asia/Jakarta",
@@ -244,11 +158,43 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-/* LOAD DATA API */
-let lastBuy = null;
-let lastSell = null;
-let lastBuyDiff = 0;
-let lastSellDiff = 0;
+/* PROFIT & API (kode asli Anda, tidak dihapus) */
+const nilaiEmas20 = 20000000;
+const modal20 = nilaiEmas20 - 685000;
+
+const nilaiEmas30 = 30000000;
+const modal30 = nilaiEmas30 - 1020000;
+
+function formatDecimal(num) {
+  return num.toLocaleString("id-ID", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+}
+function formatNumber(n) {
+  return n.toLocaleString("id-ID");
+}
+
+function hitungProfit20(sell, buy) {
+  const jumlahGram = nilaiEmas20 / buy;
+  const totalJual = jumlahGram * sell;
+  return { profitRupiah: totalJual - modal20, profitGram: (totalJual - modal20)/sell, jumlahGram };
+}
+
+function hitungProfit30(sell, buy) {
+  const jumlahGram = nilaiEmas30 / buy;
+  const totalJual = jumlahGram * sell;
+  return { profitRupiah: totalJual - modal30, profitGram: (totalJual - modal30)/sell, jumlahGram };
+}
+
+function updateAllProfit(sell, buy) {
+  const o20 = hitungProfit20(sell, buy);
+  document.getElementById("profit").innerHTML =
+    `Profit 20jt: Rp ${o20.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o20.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(o20.jumlahGram)} gr`;
+
+  const o30 = hitungProfit30(sell, buy);
+  document.getElementById("profit2").innerHTML =
+    `Profit 30jt: Rp ${o30.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o30.profitGram)} gr)<br>Jumlah Emas: ${formatDecimal(o30.jumlahGram)} gr`;
+}
+
+let lastBuy = null, lastSell = null, lastBuyDiff = 0, lastSellDiff = 0;
 
 async function loadGold() {
   try {
@@ -263,13 +209,9 @@ async function loadGold() {
     const sellEl = document.getElementById("sell");
     const sellDiffEl = document.getElementById("sellDiff");
 
-    buyEl.classList.remove("green","red","fade");
-    sellEl.classList.remove("green","red","fade");
-
     if (lastBuy !== null && buy !== lastBuy) {
-      const diff = buy - lastBuy;
-      lastBuyDiff = diff;
-      buyEl.classList.add(diff > 0 ? "green" : "red", "fade");
+      lastBuyDiff = buy - lastBuy;
+      buyEl.className = lastBuyDiff > 0 ? "green fade" : "red fade";
     }
     buyEl.innerText = formatNumber(buy);
     buyDiffEl.innerHTML =
@@ -278,9 +220,8 @@ async function loadGold() {
       `<span class="neutral">(0)</span>`;
 
     if (lastSell !== null && sell !== lastSell) {
-      const diff = sell - lastSell;
-      lastSellDiff = diff;
-      sellEl.classList.add(diff > 0 ? "green" : "red", "fade");
+      lastSellDiff = sell - lastSell;
+      sellEl.className = lastSellDiff > 0 ? "green fade" : "red fade";
     }
     sellEl.innerText = formatNumber(sell);
     sellDiffEl.innerHTML =
