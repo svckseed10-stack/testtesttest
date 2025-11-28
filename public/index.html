@@ -16,13 +16,14 @@
     overflow: hidden;
   }
 
-  /* CARD UTAMA */
+  /* CARD UTAMA (FLEXIBLE) */
   .card {
     background: #1a1a1a;
-    padding: 20px 24px;
-    border-radius: 12px;
-    width: 360px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;  /* maksimal lebar desktop */
     margin: 20px auto 0 auto;
+    border-radius: 12px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.6);
     border: 1px solid #222;
     text-align: center;
@@ -62,7 +63,7 @@
   /* RESPONSIVE MOBILE */
   @media (max-width: 480px) {
     .card {
-      width: 90%;
+      width: 95%;
       padding: 16px;
     }
     .value { font-size: 18px; }
@@ -119,9 +120,7 @@
 </div>
 
 <script>
-/* ========================================
-   SESUAIKAN TINGGI CHART DENGAN CARD
-======================================== */
+/* SESUAIKAN TINGGI CHART DENGAN CARD */
 function adjustChart() {
   const card = document.querySelector(".card");
   const chart = document.getElementById("chartWrapper");
@@ -129,13 +128,10 @@ function adjustChart() {
   chart.style.top = cardHeight + "px";
   chart.style.height = `calc(100vh - ${cardHeight}px)`;
 }
-
 window.onload = adjustChart;
 window.onresize = adjustChart;
 
-/* ========================================
-   PROFIT & WAKTU
-======================================== */
+/* PROFIT & WAKTU */
 const nilaiEmas20 = 20000000;
 const modal20 = 20000000 - 685000;
 const nilaiEmas30 = 30000000;
