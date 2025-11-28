@@ -6,7 +6,6 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-  /* RESET & BODY */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: Arial, sans-serif;
@@ -16,14 +15,12 @@
     overflow: hidden;
   }
 
-  /* CARD UTAMA (FLEXIBLE) */
+  /* CARD UTAMA */
   .card {
     background: #1a1a1a;
     padding: 20px;
-    width: 90%;
-    max-width: 400px;  /* maksimal lebar desktop */
-    margin: 20px auto 0 auto;
     border-radius: 12px;
+    margin: 20px auto 0 auto;
     box-shadow: 0 8px 30px rgba(0,0,0,0.6);
     border: 1px solid #222;
     text-align: center;
@@ -52,34 +49,19 @@
   }
   #spread { color: #f0e68c; }
 
-  /* CHART FULL AUTO SIZE */
+  /* CHART FULL */
   #chartWrapper {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    left: 0; right: 0; bottom: 0;
     width: 100%;
     z-index: 0;
   }
-
-  /* RESPONSIVE MOBILE: width full */
-  @media (max-width: 480px) {
-    .card {
-      width: 100%;
-      border-radius: 0;
-      margin: 0;
-      padding: 16px;
-    }
-    .value { font-size: 18px; }
-    .diff { font-size: 10px; }
-    h1 { font-size: 16px; }
-    #spread, #profit, #profit2 { font-size: 14px; }
-  }
 </style>
 </head>
-
 <body>
 
 <!-- CARD UTAMA -->
-<div class="card">
+<div class="card" id="goldCard">
   <h1>Realtime Gold Price</h1>
   <div id="time" class="time">--:--:--</div>
 
@@ -122,16 +104,22 @@
 </div>
 
 <script>
-/* SESUAIKAN TINGGI CHART DENGAN CARD */
-function adjustChart() {
-  const card = document.querySelector(".card");
+/* SESUAIKAN LEBAR CARD DENGAN CHART */
+function adjustCardWidth() {
   const chart = document.getElementById("chartWrapper");
-  const cardHeight = card.offsetHeight + 20; // margin bawah card
+  const card = document.getElementById("goldCard");
+
+  const chartWidth = chart.offsetWidth;
+  card.style.width = chartWidth + "px";
+
+  // sesuaikan posisi chart di bawah card
+  const cardHeight = card.offsetHeight + 20;
   chart.style.top = cardHeight + "px";
   chart.style.height = `calc(100vh - ${cardHeight}px)`;
 }
-window.onload = adjustChart;
-window.onresize = adjustChart;
+
+window.addEventListener("load", adjustCardWidth);
+window.addEventListener("resize", adjustCardWidth);
 
 /* PROFIT & WAKTU */
 const nilaiEmas20 = 20000000;
@@ -205,6 +193,8 @@ async function loadGold(){
 
     lastBuy=buy;
     lastSell=sell;
+
+    adjustCardWidth(); // pastikan card mengikuti chart saat data update
   }catch(err){ console.error(err); }
 }
 
