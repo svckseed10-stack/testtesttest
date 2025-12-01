@@ -15,7 +15,6 @@
     overflow: hidden;
   }
 
-  /* CARD UTAMA */
   .card {
     background: #1a1a1a;
     padding: 20px;
@@ -49,7 +48,6 @@
   }
   #spread { color: #f0e68c; }
 
-  /* CHART FULL */
   #chartWrapper {
     position: absolute;
     left: 0; right: 0; bottom: 0;
@@ -60,7 +58,6 @@
 </head>
 <body>
 
-<!-- CARD UTAMA -->
 <div class="card" id="goldCard">
   <h1>Realtime Gold Price</h1>
   <div id="time" class="time">--:--:--</div>
@@ -82,7 +79,6 @@
   <div id="profit2">Profit 30jt: -</div>
 </div>
 
-<!-- CHART FULL -->
 <div id="chartWrapper">
   <div class="tradingview-widget-container" style="width:100%;height:100%;">
     <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
@@ -112,7 +108,6 @@ function adjustCardWidth() {
   const chartWidth = chart.offsetWidth;
   card.style.width = chartWidth + "px";
 
-  // sesuaikan posisi chart di bawah card
   const cardHeight = card.offsetHeight + 20;
   chart.style.top = cardHeight + "px";
   chart.style.height = `calc(100vh - ${cardHeight}px)`;
@@ -123,9 +118,9 @@ window.addEventListener("resize", adjustCardWidth);
 
 /* PROFIT & WAKTU */
 const nilaiEmas20 = 20000000;
-const modal20 = 20000000 - 685000;
+const modal20 = nilaiEmas20 - 685000;
 const nilaiEmas30 = 30000000;
-const modal30 = 30000000 - 1020000;
+const modal30 = nilaiEmas30 - 1020000;
 
 function formatDecimal(num){ return num.toLocaleString("id-ID",{minimumFractionDigits:4,maximumFractionDigits:4}); }
 function formatNumber(n){ return n.toLocaleString("id-ID"); }
@@ -141,26 +136,60 @@ function hitungProfit(sell,buy,nilai,modal){
 function updateProfitUI(sell,buy){
   const o20 = hitungProfit(sell,buy,nilaiEmas20,modal20);
   const o30 = hitungProfit(sell,buy,nilaiEmas30,modal30);
-  document.getElementById("profit").innerHTML = `Profit 20jt: Rp ${o20.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o20.profitGram)} gr)`;
-  document.getElementById("profit2").innerHTML = `Profit 30jt: Rp ${o30.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o30.profitGram)} gr)`;
+  document.getElementById("profit").innerHTML =
+    `Profit 20jt: Rp ${o20.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o20.profitGram)} gr)`;
+  document.getElementById("profit2").innerHTML =
+    `Profit 30jt: Rp ${o30.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o30.profitGram)} gr)`;
 }
 
-/* WAKTU */
-function updateTime() {
-  document.getElementById("time").innerText = new Date().toLocaleTimeString("id-ID",{timeZone:"Asia/Jakarta",hour12:false});
+/* WAKTU SERVER SINKRON */
+let serverOffset = 0; // selisih server - local
+
+async function syncServerTime() {
+  try {
+    const res = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const data = await res.json();
+
+    const serverUnix = data.unixtime; // detik
+    const localUnix = Math.floor(Date.now() / 1000); // detik HP
+    serverOffset = serverUnix - localUnix;
+    console.log("Offset waktu server:", serverOffset, "detik");
+  } catch (e) {
+    console.error("Gagal sync waktu server:", e);
+  }
 }
-setInterval(updateTime,1000);
-updateTime();
+
+function updateServerClock() {
+  const localUnix = Math.floor(Date.now() / 1000);
+  const realUnix = localUnix + serverOffset;
+  const date = new Date(realUnix * 1000);
+  const timeString = date.toLocaleTimeString("id-ID", {
+    hour12: false,
+    timeZone: "Asia/Jakarta",
+  });
+  document.getElementById("time").innerText = timeString;
+}
+
+syncServerTime();                    // sync awal
+setInterval(updateServerClock, 1000); // update jam realtime tiap detik
+setInterval(syncServerTime, 300000);  // update offset tiap 5 menit
 
 /* LOAD DATA API */
 let lastBuy=null,lastSell=null,lastBuyDiff=0,lastSellDiff=0;
+let lastTimestamp=null;
 
 async function loadGold(){
   try{
     const res=await fetch("/api/gold");
     const data=await res.json();
+
     const buy=parseFloat(data.buying_rate);
     const sell=parseFloat(data.selling_rate);
+    const timestamp=new Date(data.updated_at);
+
+    // jangan update jika timestamp mundur atau sama
+    if (lastTimestamp && timestamp <= lastTimestamp) return;
+    lastTimestamp = timestamp;
 
     const buyEl=document.getElementById("buy");
     const buyDiffEl=document.getElementById("buyDiff");
@@ -194,7 +223,7 @@ async function loadGold(){
     lastBuy=buy;
     lastSell=sell;
 
-    adjustCardWidth(); // pastikan card mengikuti chart saat data update
+    adjustCardWidth();
   }catch(err){ console.error(err); }
 }
 
