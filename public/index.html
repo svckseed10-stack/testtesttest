@@ -6,164 +6,228 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#111;color:#fff;height:100vh;overflow:hidden}
-.card{background:#1a1a1a;padding:20px;border-radius:12px;margin:20px auto 0;box-shadow:0 8px 30px rgba(0,0,0,.6);border:1px solid #222;text-align:center;position:relative;z-index:10}
-h1{font-size:18px;margin-bottom:10px}
-.time{color:#bbb;font-size:13px;margin-bottom:12px}
-.row{margin:12px 0}
-.label{color:#aaa;font-size:13px}
-.value{font-size:22px;font-weight:700}
-.diff{font-size:12px;margin-top:4px}
-.green{color:#4caf50}
-.red{color:#ff6b6b}
-.neutral{color:#999}
-.fade{animation:pulse .25s ease-out}
-@keyframes pulse{from{transform:scale(1.06);opacity:.2}to{transform:scale(1);opacity:1}}
-#spread,#profit,#profit2{margin-top:14px;font-weight:600}
-#spread{color:#f0e68c}
-#chartWrapper{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:0}
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.card {
+  background: #1a1a1a;
+  padding: 20px 24px;
+  border-radius: 12px;
+  width: 380px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  border: 1px solid #222;
+}
+
+h1 {
+  font-size: 18px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.time {
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.row { margin: 12px 0; }
+.label { color: #aaa; font-size: 13px; }
+.value { font-size: 22px; font-weight: 700; }
+.diff { font-size: 12px; margin-top: 4px; }
+
+.green { color: #4caf50; }
+.red { color: #ff6b6b; }
+.neutral { color: #999; }
+
+.fade { animation: pulse 0.25s ease-out; }
+
+@keyframes pulse {
+  from { transform: scale(1.06); opacity:.3 }
+  to   { transform: scale(1); opacity:1 }
+}
+
+#spread {
+  margin-top: 12px;
+  color: #f0e68c;
+  text-align: center;
+  font-weight: 600;
+}
+
+#bias {
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.bias-up { background:#0f2e1a; color:#4caf50; }
+.bias-down { background:#2e1414; color:#ff6b6b; }
+.bias-neutral { background:#222; color:#aaa; }
+
+.small {
+  font-size: 12px;
+  margin-top: 6px;
+  color: #bbb;
+}
 </style>
 </head>
 
 <body>
+<div class="card">
 
-<div class="card" id="goldCard">
 <h1>Realtime Gold Price</h1>
 <div id="time" class="time">--:--:--</div>
 
 <div class="row">
-<div class="label">Buying Rate</div>
-<div id="buy" class="value">Loading...</div>
-<div id="buyDiff" class="diff neutral">(0)</div>
+  <div class="label">Buying Rate</div>
+  <div id="buy" class="value">Loading...</div>
+  <div id="buyDiff" class="diff neutral">(0)</div>
 </div>
 
 <div class="row">
-<div class="label">Selling Rate</div>
-<div id="sell" class="value">Loading...</div>
-<div id="sellDiff" class="diff neutral">(0)</div>
+  <div class="label">Selling Rate</div>
+  <div id="sell" class="value">Loading...</div>
+  <div id="sellDiff" class="diff neutral">(0)</div>
 </div>
 
 <div id="spread">Spread: -</div>
-<div id="profit">Profit 20jt: -</div>
-<div id="profit2">Profit 30jt: -</div>
+
+<div id="bias" class="bias-neutral">
+  5m Bias: UNCERTAIN
+  <div id="confidence" class="small"></div>
 </div>
 
-<div id="chartWrapper">
-<div class="tradingview-widget-container" style="width:100%;height:100%;">
-<div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
-<script src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-{
-  "autosize": true,
-  "symbol": "XAUUSD",
-  "interval": "D",
-  "timezone": "Asia/Jakarta",
-  "theme": "dark",
-  "style": "1",
-  "locale": "en",
-  "backgroundColor": "#000000",
-  "gridColor": "rgba(255,255,255,0.05)"
-}
-</script>
-</div>
 </div>
 
 <script>
-/* ================= UI ADJUST ================= */
-function adjustCardWidth(){
-  const c=document.getElementById("chartWrapper");
-  const g=document.getElementById("goldCard");
-  g.style.width=c.offsetWidth+"px";
-  const h=g.offsetHeight+20;
-  c.style.top=h+"px";
-  c.style.height=`calc(100vh - ${h}px)`;
-}
-addEventListener("load",adjustCardWidth);
-addEventListener("resize",adjustCardWidth);
+/* ============================
+   FORMAT
+============================ */
+const formatNumber = n => n.toLocaleString("id-ID");
 
-/* ================= PROFIT ================= */
-const nilai20=20000000,modal20=nilai20-685000;
-const nilai30=30000000,modal30=nilai30-1020000;
-const fmt=n=>n.toLocaleString("id-ID");
-const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4,maximumFractionDigits:4});
+/* ============================
+   SERVER CLOCK (DISPLAY ONLY)
+============================ */
+let serverOffset = 0;
 
-function hitung(sell,buy,nilai,modal){
-  const g=nilai/buy,t=g*sell,p=t-modal;
-  return{p,gr:p/sell};
-}
-function updateProfit(sell,buy){
-  const a=hitung(sell,buy,nilai20,modal20);
-  const b=hitung(sell,buy,nilai30,modal30);
-  profit.innerHTML=`Profit 20jt: Rp ${fmt(a.p)} (${fmt4(a.gr)} gr)`;
-  profit2.innerHTML=`Profit 30jt: Rp ${fmt(b.p)} (${fmt4(b.gr)} gr)`;
+async function syncServerTime() {
+  try {
+    const r = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const d = await r.json();
+    serverOffset = d.unixtime - Math.floor(Date.now()/1000);
+  } catch {}
 }
 
-/* ================= SERVER CLOCK ================= */
-let offset=0;
-async function syncTime(){
-  try{
-    const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta",{cache:"no-store"});
-    const d=await r.json();
-    offset=d.unixtime*1000-Date.now();
-  }catch{}
+function updateClock() {
+  const t = new Date((Math.floor(Date.now()/1000)+serverOffset)*1000);
+  document.getElementById("time").innerText =
+    "Now WIB: " + t.toLocaleTimeString("id-ID",{hour12:false});
 }
-function tick(){
-  time.innerText=new Date(Date.now()+offset)
-    .toLocaleTimeString("id-ID",{hour12:false,timeZone:"Asia/Jakarta"});
-}
-syncTime();setInterval(syncTime,300000);setInterval(tick,1000);
 
-/* ================= GOLD FETCH ================= */
-let lastBuy=null,lastSell=null,lastTS=null,lastBD=0,lastSD=0,fetching=false;
+syncServerTime();
+setInterval(updateClock,1000);
+setInterval(syncServerTime,300000);
+
+/* ============================
+   EVENT HISTORY (CORE)
+============================ */
+const history = [];
+let lastEventTime = null;
+
+const THRESHOLD = 500; // emas
+
+function getWindowTrend(minutes) {
+  if (history.length < 2) return "SIDE";
+
+  const now = history[history.length - 1].t;
+  const cutoff = now - minutes * 60 * 1000;
+  const window = history.filter(e => e.t >= cutoff);
+
+  if (window.length < 2) return "SIDE";
+
+  const delta = window[window.length - 1].p - window[0].p;
+
+  if (delta > THRESHOLD) return "UP";
+  if (delta < -THRESHOLD) return "DOWN";
+  return "SIDE";
+}
+
+function updateBiasUI() {
+  const t2 = getWindowTrend(2);
+  const t3 = getWindowTrend(3);
+  const t5 = getWindowTrend(5);
+
+  let bias = "UNCERTAIN";
+  let cls = "bias-neutral";
+
+  if (t2==="UP" && t3==="UP" && t5==="UP") {
+    bias = "HIGHER";
+    cls = "bias-up";
+  }
+  if (t2==="DOWN" && t3==="DOWN" && t5==="DOWN") {
+    bias = "LOWER";
+    cls = "bias-down";
+  }
+
+  const score = [t2,t3,t5].filter(t => t==="UP" || t==="DOWN").length;
+  const conf = Math.round(score / 3 * 100);
+
+  const el = document.getElementById("bias");
+  el.className = cls;
+  el.innerHTML = `5m Bias: ${bias}
+    <div class="small">
+      2m:${t2} · 3m:${t3} · 5m:${t5} · Confidence: ${conf}%
+    </div>`;
+}
+
+/* ============================
+   LOAD GOLD (ANTI-ROLLBACK)
+============================ */
+let lastBuy=null, lastSell=null;
 
 async function loadGold(){
-  if(fetching)return;
-  fetching=true;
   try{
-    const r=await fetch("/api/gold",{cache:"no-store"});
-    const d=await r.json();
-    if(!d.updated_at)return;
+    const r = await fetch("/api/gold",{cache:"no-store"});
+    const d = await r.json();
 
-    const ts=new Date(d.updated_at.replace(" ","T")).getTime();
-    const buy=Number(d.buying_rate),sell=Number(d.selling_rate);
-    if(isNaN(buy)||isNaN(sell))return;
+    const buy = Number(d.buying_rate);
+    const sell = Number(d.selling_rate);
+    const eventTime = new Date(d.updated_at.replace(" ","T")).getTime();
 
-    // STRICT RULE
-    if(lastTS!==null && ts<=lastTS)return;
-    lastTS=ts;
+    if (lastEventTime !== null && eventTime <= lastEventTime) return;
+    lastEventTime = eventTime;
 
-    buyEl=buyEl||buy;
-    buy.classList?.remove?.();
+    history.push({ t: eventTime, p: buy });
+    if (history.length > 20) history.shift();
 
-    buyEl=document.getElementById("buy");
-    sellEl=document.getElementById("sell");
+    const buyEl = document.getElementById("buy");
+    const sellEl = document.getElementById("sell");
 
-    buyEl.classList.remove("green","red","fade");
-    sellEl.classList.remove("green","red","fade");
+    buyEl.innerText = formatNumber(buy);
+    sellEl.innerText = formatNumber(sell);
 
-    if(lastBuy!==null && buy!==lastBuy){
-      lastBD=buy-lastBuy;
-      buyEl.classList.add(lastBD>0?"green":"red","fade");
-    }
-    buyEl.innerText=fmt(buy);
-    buyDiff.innerHTML=lastBD>0?`<span class="green">⬆ +${fmt(lastBD)}</span>`:
-                       lastBD<0?`<span class="red">⬇ ${fmt(lastBD)}</span>`:`<span class="neutral">(0)</span>`;
+    document.getElementById("spread").innerText =
+      "Spread: " + formatNumber(buy - sell);
 
-    if(lastSell!==null && sell!==lastSell){
-      lastSD=sell-lastSell;
-      sellEl.classList.add(lastSD>0?"green":"red","fade");
-    }
-    sellEl.innerText=fmt(sell);
-    sellDiff.innerHTML=lastSD>0?`<span class="green">⬆ +${fmt(lastSD)}</span>`:
-                        lastSD<0?`<span class="red">⬇ ${fmt(lastSD)}</span>`:`<span class="neutral">(0)</span>`;
+    updateBiasUI();
 
-    spread.innerText="Spread: "+fmt(buy-sell);
-    updateProfit(sell,buy);
+    lastBuy = buy;
+    lastSell = sell;
 
-    lastBuy=buy;lastSell=sell;
-    adjustCardWidth();
-  }catch(e){console.error(e)}
-  finally{fetching=false}
+  } catch(e){
+    console.error("Fetch error:",e);
+  }
 }
 
 loadGold();
