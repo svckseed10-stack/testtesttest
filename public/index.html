@@ -6,225 +6,164 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .card {
-    background: #1a1a1a;
-    padding: 20px;
-    border-radius: 12px;
-    margin: 20px auto 0 auto;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    border: 1px solid #222;
-    text-align: center;
-    position: relative;
-    z-index: 10;
-  }
-
-  h1 { font-size: 18px; margin-bottom: 10px; }
-  .time { color: #bbb; font-size: 13px; margin-bottom: 12px; }
-
-  .row { margin: 12px 0; }
-  .label { color: #aaa; font-size: 13px; }
-  .value { font-size: 22px; font-weight: 700; }
-  .diff { font-size: 12px; margin-top: 4px; }
-
-  .green { color: #4caf50; }
-  .red { color: #ff6b6b; }
-  .neutral { color: #999; }
-
-  .fade { animation: pulse 0.25s ease-out; }
-  @keyframes pulse { from { transform: scale(1.06); opacity: .2 } to { transform: scale(1); opacity: 1 } }
-
-  #spread, #profit, #profit2 {
-    margin-top: 14px;
-    font-weight: 600;
-  }
-  #spread { color: #f0e68c; }
-
-  #chartWrapper {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    width: 100%;
-    z-index: 0;
-  }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#111;color:#fff;height:100vh;overflow:hidden}
+.card{background:#1a1a1a;padding:20px;border-radius:12px;margin:20px auto 0;box-shadow:0 8px 30px rgba(0,0,0,.6);border:1px solid #222;text-align:center;position:relative;z-index:10}
+h1{font-size:18px;margin-bottom:10px}
+.time{color:#bbb;font-size:13px;margin-bottom:12px}
+.row{margin:12px 0}
+.label{color:#aaa;font-size:13px}
+.value{font-size:22px;font-weight:700}
+.diff{font-size:12px;margin-top:4px}
+.green{color:#4caf50}
+.red{color:#ff6b6b}
+.neutral{color:#999}
+.fade{animation:pulse .25s ease-out}
+@keyframes pulse{from{transform:scale(1.06);opacity:.2}to{transform:scale(1);opacity:1}}
+#spread,#profit,#profit2{margin-top:14px;font-weight:600}
+#spread{color:#f0e68c}
+#chartWrapper{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:0}
 </style>
 </head>
+
 <body>
 
 <div class="card" id="goldCard">
-  <h1>Realtime Gold Price</h1>
-  <div id="time" class="time">--:--:--</div>
+<h1>Realtime Gold Price</h1>
+<div id="time" class="time">--:--:--</div>
 
-  <div class="row">
-    <div class="label">Buying Rate</div>
-    <div id="buy" class="value">Loading...</div>
-    <div id="buyDiff" class="diff neutral">(0)</div>
-  </div>
+<div class="row">
+<div class="label">Buying Rate</div>
+<div id="buy" class="value">Loading...</div>
+<div id="buyDiff" class="diff neutral">(0)</div>
+</div>
 
-  <div class="row">
-    <div class="label">Selling Rate</div>
-    <div id="sell" class="value">Loading...</div>
-    <div id="sellDiff" class="diff neutral">(0)</div>
-  </div>
+<div class="row">
+<div class="label">Selling Rate</div>
+<div id="sell" class="value">Loading...</div>
+<div id="sellDiff" class="diff neutral">(0)</div>
+</div>
 
-  <div id="spread">Spread: -</div>
-  <div id="profit">Profit 20jt: -</div>
-  <div id="profit2">Profit 30jt: -</div>
+<div id="spread">Spread: -</div>
+<div id="profit">Profit 20jt: -</div>
+<div id="profit2">Profit 30jt: -</div>
 </div>
 
 <div id="chartWrapper">
-  <div class="tradingview-widget-container" style="width:100%;height:100%;">
-    <div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
-    <script type="text/javascript"
-      src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-    {
-      "autosize": true,
-      "symbol": "XAUUSD",
-      "interval": "D",
-      "timezone": "Asia/Jakarta",
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "backgroundColor": "#000000",
-      "gridColor": "rgba(255,255,255,0.05)"
-    }
-    </script>
-  </div>
+<div class="tradingview-widget-container" style="width:100%;height:100%;">
+<div class="tradingview-widget-container__widget" style="width:100%;height:100%;"></div>
+<script src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+{
+  "autosize": true,
+  "symbol": "XAUUSD",
+  "interval": "D",
+  "timezone": "Asia/Jakarta",
+  "theme": "dark",
+  "style": "1",
+  "locale": "en",
+  "backgroundColor": "#000000",
+  "gridColor": "rgba(255,255,255,0.05)"
+}
+</script>
+</div>
 </div>
 
 <script>
-/* SESUAIKAN LEBAR CARD DENGAN CHART */
-function adjustCardWidth() {
-  const chart = document.getElementById("chartWrapper");
-  const card = document.getElementById("goldCard");
+/* ================= UI ADJUST ================= */
+function adjustCardWidth(){
+  const c=document.getElementById("chartWrapper");
+  const g=document.getElementById("goldCard");
+  g.style.width=c.offsetWidth+"px";
+  const h=g.offsetHeight+20;
+  c.style.top=h+"px";
+  c.style.height=`calc(100vh - ${h}px)`;
+}
+addEventListener("load",adjustCardWidth);
+addEventListener("resize",adjustCardWidth);
 
-  const chartWidth = chart.offsetWidth;
-  card.style.width = chartWidth + "px";
+/* ================= PROFIT ================= */
+const nilai20=20000000,modal20=nilai20-685000;
+const nilai30=30000000,modal30=nilai30-1020000;
+const fmt=n=>n.toLocaleString("id-ID");
+const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4,maximumFractionDigits:4});
 
-  const cardHeight = card.offsetHeight + 20;
-  chart.style.top = cardHeight + "px";
-  chart.style.height = `calc(100vh - ${cardHeight}px)`;
+function hitung(sell,buy,nilai,modal){
+  const g=nilai/buy,t=g*sell,p=t-modal;
+  return{p,gr:p/sell};
+}
+function updateProfit(sell,buy){
+  const a=hitung(sell,buy,nilai20,modal20);
+  const b=hitung(sell,buy,nilai30,modal30);
+  profit.innerHTML=`Profit 20jt: Rp ${fmt(a.p)} (${fmt4(a.gr)} gr)`;
+  profit2.innerHTML=`Profit 30jt: Rp ${fmt(b.p)} (${fmt4(b.gr)} gr)`;
 }
 
-window.addEventListener("load", adjustCardWidth);
-window.addEventListener("resize", adjustCardWidth);
-
-/* PROFIT & WAKTU */
-const nilaiEmas20 = 20000000;
-const modal20 = nilaiEmas20 - 685000;
-const nilaiEmas30 = 30000000;
-const modal30 = nilaiEmas30 - 1020000;
-
-function formatDecimal(num){ return num.toLocaleString("id-ID",{minimumFractionDigits:4,maximumFractionDigits:4}); }
-function formatNumber(n){ return n.toLocaleString("id-ID"); }
-
-function hitungProfit(sell,buy,nilai,modal){
-  const jumlahGram = nilai/buy;
-  const totalJual = jumlahGram*sell;
-  const profitRupiah = totalJual - modal;
-  const profitGram = profitRupiah/sell;
-  return {profitRupiah, profitGram, jumlahGram};
+/* ================= SERVER CLOCK ================= */
+let offset=0;
+async function syncTime(){
+  try{
+    const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta",{cache:"no-store"});
+    const d=await r.json();
+    offset=d.unixtime*1000-Date.now();
+  }catch{}
 }
-
-function updateProfitUI(sell,buy){
-  const o20 = hitungProfit(sell,buy,nilaiEmas20,modal20);
-  const o30 = hitungProfit(sell,buy,nilaiEmas30,modal30);
-  document.getElementById("profit").innerHTML =
-    `Profit 20jt: Rp ${o20.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o20.profitGram)} gr)`;
-  document.getElementById("profit2").innerHTML =
-    `Profit 30jt: Rp ${o30.profitRupiah.toLocaleString("id-ID",{minimumFractionDigits:3})} (${formatDecimal(o30.profitGram)} gr)`;
+function tick(){
+  time.innerText=new Date(Date.now()+offset)
+    .toLocaleTimeString("id-ID",{hour12:false,timeZone:"Asia/Jakarta"});
 }
+syncTime();setInterval(syncTime,300000);setInterval(tick,1000);
 
-/* WAKTU SERVER SINKRON */
-let serverOffset = 0; // selisih server - local
-
-async function syncServerTime() {
-  try {
-    const res = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
-    const data = await res.json();
-
-    const serverUnix = data.unixtime; // detik
-    const localUnix = Math.floor(Date.now() / 1000); // detik HP
-    serverOffset = serverUnix - localUnix;
-    console.log("Offset waktu server:", serverOffset, "detik");
-  } catch (e) {
-    console.error("Gagal sync waktu server:", e);
-  }
-}
-
-function updateServerClock() {
-  const localUnix = Math.floor(Date.now() / 1000);
-  const realUnix = localUnix + serverOffset;
-  const date = new Date(realUnix * 1000);
-  const timeString = date.toLocaleTimeString("id-ID", {
-    hour12: false,
-    timeZone: "Asia/Jakarta",
-  });
-  document.getElementById("time").innerText = timeString;
-}
-
-syncServerTime();                    // sync awal
-setInterval(updateServerClock, 1000); // update jam realtime tiap detik
-setInterval(syncServerTime, 300000);  // update offset tiap 5 menit
-
-/* LOAD DATA API */
-let lastBuy=null,lastSell=null,lastBuyDiff=0,lastSellDiff=0;
-let lastTimestamp=null;
+/* ================= GOLD FETCH ================= */
+let lastBuy=null,lastSell=null,lastTS=null,lastBD=0,lastSD=0,fetching=false;
 
 async function loadGold(){
+  if(fetching)return;
+  fetching=true;
   try{
-    const res=await fetch("/api/gold");
-    const data=await res.json();
+    const r=await fetch("/api/gold",{cache:"no-store"});
+    const d=await r.json();
+    if(!d.updated_at)return;
 
-    const buy=parseFloat(data.buying_rate);
-    const sell=parseFloat(data.selling_rate);
-    const timestamp=new Date(data.updated_at);
+    const ts=new Date(d.updated_at.replace(" ","T")).getTime();
+    const buy=Number(d.buying_rate),sell=Number(d.selling_rate);
+    if(isNaN(buy)||isNaN(sell))return;
 
-    // jangan update jika timestamp mundur atau sama
-    if (lastTimestamp && timestamp <= lastTimestamp) return;
-    lastTimestamp = timestamp;
+    // STRICT RULE
+    if(lastTS!==null && ts<=lastTS)return;
+    lastTS=ts;
 
-    const buyEl=document.getElementById("buy");
-    const buyDiffEl=document.getElementById("buyDiff");
-    const sellEl=document.getElementById("sell");
-    const sellDiffEl=document.getElementById("sellDiff");
+    buyEl=buyEl||buy;
+    buy.classList?.remove?.();
+
+    buyEl=document.getElementById("buy");
+    sellEl=document.getElementById("sell");
 
     buyEl.classList.remove("green","red","fade");
     sellEl.classList.remove("green","red","fade");
 
     if(lastBuy!==null && buy!==lastBuy){
-      lastBuyDiff=buy-lastBuy;
-      buyEl.classList.add(lastBuyDiff>0?"green":"red","fade");
+      lastBD=buy-lastBuy;
+      buyEl.classList.add(lastBD>0?"green":"red","fade");
     }
-    buyEl.innerText=formatNumber(buy);
-    buyDiffEl.innerHTML=lastBuyDiff>0?`<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>`:
-                        lastBuyDiff<0?`<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>`:
-                        `<span class="neutral">(0)</span>`;
+    buyEl.innerText=fmt(buy);
+    buyDiff.innerHTML=lastBD>0?`<span class="green">⬆ +${fmt(lastBD)}</span>`:
+                       lastBD<0?`<span class="red">⬇ ${fmt(lastBD)}</span>`:`<span class="neutral">(0)</span>`;
 
     if(lastSell!==null && sell!==lastSell){
-      lastSellDiff=sell-lastSell;
-      sellEl.classList.add(lastSellDiff>0?"green":"red","fade");
+      lastSD=sell-lastSell;
+      sellEl.classList.add(lastSD>0?"green":"red","fade");
     }
-    sellEl.innerText=formatNumber(sell);
-    sellDiffEl.innerHTML=lastSellDiff>0?`<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>`:
-                         lastSellDiff<0?`<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>`:
-                         `<span class="neutral">(0)</span>`;
+    sellEl.innerText=fmt(sell);
+    sellDiff.innerHTML=lastSD>0?`<span class="green">⬆ +${fmt(lastSD)}</span>`:
+                        lastSD<0?`<span class="red">⬇ ${fmt(lastSD)}</span>`:`<span class="neutral">(0)</span>`;
 
-    document.getElementById("spread").innerText="Spread: "+formatNumber(buy-sell);
-    updateProfitUI(sell,buy);
+    spread.innerText="Spread: "+fmt(buy-sell);
+    updateProfit(sell,buy);
 
-    lastBuy=buy;
-    lastSell=sell;
-
+    lastBuy=buy;lastSell=sell;
     adjustCardWidth();
-  }catch(err){ console.error(err); }
+  }catch(e){console.error(e)}
+  finally{fetching=false}
 }
 
 loadGold();
