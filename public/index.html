@@ -16,7 +16,6 @@ body {
   height: 100vh;
   margin: 0;
 }
-
 .card {
   background: #1a1a1a;
   padding: 20px 24px;
@@ -25,20 +24,17 @@ body {
   box-shadow: 0 8px 30px rgba(0,0,0,0.6);
   border: 1px solid #222;
 }
-
 h1 {
   font-size: 18px;
   margin-bottom: 6px;
   text-align: center;
 }
-
 .time {
   text-align: center;
   color: #bbb;
   font-size: 13px;
   margin-bottom: 10px;
 }
-
 .row { margin: 12px 0; }
 .label { color: #aaa; font-size: 13px; }
 .value { font-size: 22px; font-weight: 700; }
@@ -49,7 +45,6 @@ h1 {
 .neutral { color: #999; }
 
 .fade { animation: pulse 0.25s ease-out; }
-
 @keyframes pulse {
   from { transform: scale(1.06); opacity:.3 }
   to   { transform: scale(1); opacity:1 }
@@ -62,6 +57,12 @@ h1 {
   font-weight: 600;
 }
 
+#profit, #profit2 {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 600;
+}
+
 #bias {
   margin-top: 14px;
   padding: 10px;
@@ -70,7 +71,6 @@ h1 {
   font-weight: 700;
   font-size: 15px;
 }
-
 .bias-up { background:#0f2e1a; color:#4caf50; }
 .bias-down { background:#2e1414; color:#ff6b6b; }
 .bias-neutral { background:#222; color:#aaa; }
@@ -103,6 +103,9 @@ h1 {
 
 <div id="spread">Spread: -</div>
 
+<div id="profit">Profit 20jt: -</div>
+<div id="profit2">Profit 30jt: -</div>
+
 <div id="bias" class="bias-neutral">
   5m Bias: UNCERTAIN
   <div id="confidence" class="small"></div>
@@ -111,16 +114,43 @@ h1 {
 </div>
 
 <script>
-/* ============================
+/* =========================
+   CONFIG PROFIT
+========================= */
+const nilaiEmas20 = 20000000;
+const modal20 = nilaiEmas20 - 685000;
+
+const nilaiEmas30 = 30000000;
+const modal30 = nilaiEmas30 - 1020000;
+
+/* =========================
    FORMAT
-============================ */
+========================= */
 const formatNumber = n => n.toLocaleString("id-ID");
 
-/* ============================
-   SERVER CLOCK (DISPLAY ONLY)
-============================ */
-let serverOffset = 0;
+/* =========================
+   PROFIT CALC
+========================= */
+function updateAllProfit(sell, buy) {
+  const gram20 = nilaiEmas20 / buy;
+  const profit20 = gram20 * sell - modal20;
 
+  document.getElementById("profit").innerHTML =
+    `Profit 20jt: Rp ${profit20.toLocaleString("id-ID",{minimumFractionDigits:0})}
+     (${(profit20/sell).toLocaleString("id-ID",{minimumFractionDigits:4})} gr)`;
+
+  const gram30 = nilaiEmas30 / buy;
+  const profit30 = gram30 * sell - modal30;
+
+  document.getElementById("profit2").innerHTML =
+    `Profit 30jt: Rp ${profit30.toLocaleString("id-ID",{minimumFractionDigits:0})}
+     (${(profit30/sell).toLocaleString("id-ID",{minimumFractionDigits:4})} gr)`;
+}
+
+/* =========================
+   SERVER CLOCK (DISPLAY)
+========================= */
+let serverOffset = 0;
 async function syncServerTime() {
   try {
     const r = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
@@ -128,36 +158,30 @@ async function syncServerTime() {
     serverOffset = d.unixtime - Math.floor(Date.now()/1000);
   } catch {}
 }
-
 function updateClock() {
   const t = new Date((Math.floor(Date.now()/1000)+serverOffset)*1000);
   document.getElementById("time").innerText =
     "Now WIB: " + t.toLocaleTimeString("id-ID",{hour12:false});
 }
-
 syncServerTime();
 setInterval(updateClock,1000);
 setInterval(syncServerTime,300000);
 
-/* ============================
+/* =========================
    EVENT HISTORY (CORE)
-============================ */
+========================= */
 const history = [];
 let lastEventTime = null;
 
-const THRESHOLD = 500; // emas
+const THRESHOLD = 500;
 
 function getWindowTrend(minutes) {
   if (history.length < 2) return "SIDE";
-
   const now = history[history.length - 1].t;
   const cutoff = now - minutes * 60 * 1000;
   const window = history.filter(e => e.t >= cutoff);
-
   if (window.length < 2) return "SIDE";
-
   const delta = window[window.length - 1].p - window[0].p;
-
   if (delta > THRESHOLD) return "UP";
   if (delta < -THRESHOLD) return "DOWN";
   return "SIDE";
@@ -180,8 +204,8 @@ function updateBiasUI() {
     cls = "bias-down";
   }
 
-  const score = [t2,t3,t5].filter(t => t==="UP" || t==="DOWN").length;
-  const conf = Math.round(score / 3 * 100);
+  const conf =
+    Math.round([t2,t3,t5].filter(t => t==="UP" || t==="DOWN").length / 3 * 100);
 
   const el = document.getElementById("bias");
   el.className = cls;
@@ -191,10 +215,11 @@ function updateBiasUI() {
     </div>`;
 }
 
-/* ============================
+/* =========================
    LOAD GOLD (ANTI-ROLLBACK)
-============================ */
+========================= */
 let lastBuy=null, lastSell=null;
+let lastBuyDiff=0, lastSellDiff=0;
 
 async function loadGold(){
   try{
@@ -214,12 +239,35 @@ async function loadGold(){
     const buyEl = document.getElementById("buy");
     const sellEl = document.getElementById("sell");
 
+    buyEl.classList.remove("green","red","fade");
+    sellEl.classList.remove("green","red","fade");
+
+    if (lastBuy !== null && buy !== lastBuy) {
+      lastBuyDiff = buy - lastBuy;
+      buyEl.classList.add(lastBuyDiff > 0 ? "green" : "red","fade");
+    }
+    if (lastSell !== null && sell !== lastSell) {
+      lastSellDiff = sell - lastSell;
+      sellEl.classList.add(lastSellDiff > 0 ? "green" : "red","fade");
+    }
+
     buyEl.innerText = formatNumber(buy);
     sellEl.innerText = formatNumber(sell);
+
+    document.getElementById("buyDiff").innerHTML =
+      lastBuyDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastBuyDiff)}</span>` :
+      lastBuyDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastBuyDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
+
+    document.getElementById("sellDiff").innerHTML =
+      lastSellDiff > 0 ? `<span class="green">⬆ +${formatNumber(lastSellDiff)}</span>` :
+      lastSellDiff < 0 ? `<span class="red">⬇ ${formatNumber(lastSellDiff)}</span>` :
+      `<span class="neutral">(0)</span>`;
 
     document.getElementById("spread").innerText =
       "Spread: " + formatNumber(buy - sell);
 
+    updateAllProfit(sell, buy);
     updateBiasUI();
 
     lastBuy = buy;
