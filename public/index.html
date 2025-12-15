@@ -6,47 +6,47 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  margin: 0;
+body{
+  font-family:Arial,sans-serif;
+  background:#111;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  margin:0
 }
-.card {
-  background: #1a1a1a;
-  padding: 20px 24px;
-  border-radius: 12px;
-  width: 390px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  border: 1px solid #222;
+.card{
+  background:#1a1a1a;
+  padding:20px 24px;
+  border-radius:12px;
+  width:390px;
+  box-shadow:0 8px 30px rgba(0,0,0,.6);
+  border:1px solid #222
 }
-h1 { font-size:18px;text-align:center;margin:0 0 6px }
-.time { text-align:center;color:#bbb;font-size:13px;margin-bottom:8px }
-.row { margin:10px 0 }
-.label { color:#aaa;font-size:13px }
-.value { font-size:22px;font-weight:700 }
-.diff { font-size:12px;margin-top:4px }
+h1{text-align:center;font-size:18px;margin:0 0 6px}
+.time{text-align:center;color:#bbb;font-size:13px;margin-bottom:10px}
+.row{margin:10px 0}
+.label{color:#aaa;font-size:13px}
+.value{font-size:22px;font-weight:700}
+.diff{font-size:12px;margin-top:4px}
 
 .green{color:#4caf50}
 .red{color:#ff6b6b}
 .neutral{color:#999}
 
-#spread,#profit,#profit2,#stats {
+#spread,#profit,#profit2,#stats{
   margin-top:10px;
   text-align:center;
-  font-weight:600;
+  font-weight:600
 }
 
-#bias {
+#bias{
   margin-top:12px;
   padding:10px;
   border-radius:8px;
   text-align:center;
-  font-weight:700;
+  font-weight:700
 }
 .bias-up{background:#0f2e1a;color:#4caf50}
 .bias-down{background:#2e1414;color:#ff6b6b}
@@ -80,7 +80,7 @@ h1 { font-size:18px;text-align:center;margin:0 0 6px }
 
 <div id="bias" class="bias-neutral">
   5m Bias: UNCERTAIN
-  <div class="small" id="biasDetail"></div>
+  <div id="biasDetail" class="small"></div>
 </div>
 
 <div id="stats" class="small"></div>
@@ -88,6 +88,19 @@ h1 { font-size:18px;text-align:center;margin:0 0 6px }
 </div>
 
 <script>
+/* ================= DOM ================= */
+const buyEl = document.getElementById("buy");
+const sellEl = document.getElementById("sell");
+const buyDiffEl = document.getElementById("buyDiff");
+const sellDiffEl = document.getElementById("sellDiff");
+const spreadEl = document.getElementById("spread");
+const biasEl = document.getElementById("bias");
+const biasDetail = document.getElementById("biasDetail");
+const statsEl = document.getElementById("stats");
+const profitEl = document.getElementById("profit");
+const profit2El = document.getElementById("profit2");
+const timeEl = document.getElementById("time");
+
 /* ================= CONFIG ================= */
 const nilaiEmas20 = 20000000;
 const modal20 = nilaiEmas20 - 685000;
@@ -95,7 +108,7 @@ const nilaiEmas30 = 30000000;
 const modal30 = nilaiEmas30 - 1020000;
 
 const STORAGE_KEY = "gold_prediction_v1";
-const MAX_AGE = 24*60*60*1000;
+const MAX_AGE = 24 * 60 * 60 * 1000;
 const EVAL_MINUTES = 5;
 const THRESHOLD = 500;
 
@@ -103,147 +116,172 @@ const THRESHOLD = 500;
 const fmt = n => n.toLocaleString("id-ID");
 
 /* ================= CLOCK ================= */
-let serverOffset=0;
-fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta")
-.then(r=>r.json()).then(d=>{
-  serverOffset=d.unixtime-Math.floor(Date.now()/1000);
-});
-setInterval(()=>{
-  const t=new Date((Date.now()/1000+serverOffset)*1000);
-  time.innerText="Now WIB: "+t.toLocaleTimeString("id-ID",{hour12:false});
-},1000);
+let serverOffset = 0;
+async function syncTime(){
+  try{
+    const r = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const d = await r.json();
+    serverOffset = d.unixtime - Math.floor(Date.now()/1000);
+  }catch{}
+}
+function updateClock(){
+  const t = new Date((Date.now()/1000 + serverOffset) * 1000);
+  timeEl.textContent = "Now WIB: " +
+    t.toLocaleTimeString("id-ID",{hour12:false});
+}
+syncTime();
+setInterval(updateClock,1000);
+setInterval(syncTime,300000);
 
 /* ================= HISTORY ================= */
-const history=[];
-let lastEventTime=null;
+const history = [];
+let lastEventTime = null;
 
 /* ================= PERSIST ================= */
 function loadPredictionLog(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return [];
-    const p=JSON.parse(raw);
-    const now=Date.now();
-    return p.filter(x=>now-x.time<MAX_AGE);
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+    return parsed.filter(p => now - p.time < MAX_AGE);
   }catch{
     localStorage.removeItem(STORAGE_KEY);
     return [];
   }
 }
 function savePredictionLog(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(predictionLog));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(predictionLog));
 }
-let predictionLog=loadPredictionLog();
-let lastStoredBias=null;
+let predictionLog = loadPredictionLog();
+let lastStoredBias = null;
 
 /* ================= PROFIT ================= */
-function updateProfit(buy,sell){
-  const g20=nilaiEmas20/buy;
-  const p20=g20*sell-modal20;
-  profit.innerHTML=`Profit 20jt: Rp ${fmt(p20)} (${(p20/sell).toFixed(4)} gr)`;
+function updateProfit(buy, sell){
+  const g20 = nilaiEmas20 / buy;
+  const p20 = g20 * sell - modal20;
+  profitEl.innerHTML =
+    `Profit 20jt: Rp ${fmt(p20)} (${(p20/sell).toFixed(4)} gr)`;
 
-  const g30=nilaiEmas30/buy;
-  const p30=g30*sell-modal30;
-  profit2.innerHTML=`Profit 30jt: Rp ${fmt(p30)} (${(p30/sell).toFixed(4)} gr)`;
+  const g30 = nilaiEmas30 / buy;
+  const p30 = g30 * sell - modal30;
+  profit2El.innerHTML =
+    `Profit 30jt: Rp ${fmt(p30)} (${(p30/sell).toFixed(4)} gr)`;
 }
 
 /* ================= TREND ================= */
-function windowTrend(m){
-  const now=history.at(-1)?.t;
-  if(!now) return "SIDE";
-  const w=history.filter(h=>h.t>=now-m*60000);
-  if(w.length<2) return "SIDE";
-  const d=w.at(-1).p-w[0].p;
-  if(d>THRESHOLD) return "UP";
-  if(d<-THRESHOLD) return "DOWN";
+function windowTrend(min){
+  if(history.length < 2) return "SIDE";
+  const now = history.at(-1).t;
+  const w = history.filter(h => h.t >= now - min*60000);
+  if(w.length < 2) return "SIDE";
+  const d = w.at(-1).p - w[0].p;
+  if(d > THRESHOLD) return "UP";
+  if(d < -THRESHOLD) return "DOWN";
   return "SIDE";
 }
 
 function updateBias(){
-  const t2=windowTrend(2);
-  const t3=windowTrend(3);
-  const t5=windowTrend(5);
+  const t2 = windowTrend(2);
+  const t3 = windowTrend(3);
+  const t5 = windowTrend(5);
 
-  let bias="UNCERTAIN",cls="bias-neutral";
-  if(t2==="UP"&&t3==="UP"&&t5==="UP"){bias="HIGHER";cls="bias-up";}
-  if(t2==="DOWN"&&t3==="DOWN"&&t5==="DOWN"){bias="LOWER";cls="bias-down";}
+  let bias = "UNCERTAIN";
+  let cls = "bias-neutral";
 
-  const conf=Math.round([t2,t3,t5].filter(x=>x!=="SIDE").length/3*100);
+  if(t2==="UP" && t3==="UP" && t5==="UP"){
+    bias="HIGHER"; cls="bias-up";
+  }
+  if(t2==="DOWN" && t3==="DOWN" && t5==="DOWN"){
+    bias="LOWER"; cls="bias-down";
+  }
 
-  biasEl.className=cls;
-  biasEl.firstChild.textContent=`5m Bias: ${bias}`;
-  biasDetail.innerText=`2m:${t2} · 3m:${t3} · 5m:${t5} · Confidence:${conf}%`;
+  const conf = Math.round(
+    [t2,t3,t5].filter(x=>x!=="SIDE").length / 3 * 100
+  );
+
+  biasEl.className = cls;
+  biasEl.firstChild.textContent = `5m Bias: ${bias}`;
+  biasDetail.textContent =
+    `2m:${t2} · 3m:${t3} · 5m:${t5} · Confidence:${conf}%`;
 
   if(history.length>=5 && bias!=="UNCERTAIN" && bias!==lastStoredBias){
     predictionLog.push({
-      time:history.at(-1).t,
-      price:history.at(-1).p,
+      time: history.at(-1).t,
+      price: history.at(-1).p,
       bias,
-      confidence:conf,
-      evaluated:false
+      confidence: conf,
+      evaluated: false
     });
     if(predictionLog.length>20) predictionLog.shift();
     savePredictionLog();
-    lastStoredBias=bias;
+    lastStoredBias = bias;
   }
 }
 
 /* ================= EVALUATION ================= */
-function evaluate(){
-  const now=history.at(-1)?.t;
+function evaluatePredictions(){
+  const now = history.at(-1)?.t;
   predictionLog.forEach(p=>{
     if(p.evaluated) return;
-    if(now<p.time+EVAL_MINUTES*60000) return;
-    const f=history.find(h=>h.t>=p.time+EVAL_MINUTES*60000);
+    if(now < p.time + EVAL_MINUTES*60000) return;
+    const f = history.find(h => h.t >= p.time + EVAL_MINUTES*60000);
     if(!f) return;
-    const d=f.p-p.price;
-    p.result=(p.bias==="HIGHER"&&d>0)||(p.bias==="LOWER"&&d<0);
-    p.evaluated=true;
-    p.delta=d;
+    const d = f.p - p.price;
+    p.result =
+      (p.bias==="HIGHER" && d>0) ||
+      (p.bias==="LOWER" && d<0);
+    p.evaluated = true;
   });
   savePredictionLog();
 }
 
+/* ================= STATS ================= */
 function updateStats(){
-  const done=predictionLog.filter(p=>p.evaluated);
-  if(done.length<3){
-    stats.innerText="⚠ Data belum cukup untuk statistik";
+  const done = predictionLog.filter(p=>p.evaluated);
+  if(done.length < 3){
+    statsEl.textContent = "⚠ Data belum cukup untuk statistik";
     return;
   }
-  const win=done.filter(p=>p.result).length;
-  stats.innerText=
+  const win = done.filter(p=>p.result).length;
+  statsEl.textContent =
     `Win-rate ${EVAL_MINUTES}m: ${Math.round(win/done.length*100)}% · `
-    +`✅ ${win} / ❌ ${done.length-win}`;
+    + `✅ ${win} / ❌ ${done.length-win}`;
 }
 
 /* ================= FETCH ================= */
-let lastBuy=null,lastSell=null;
 async function loadGold(){
-  const r=await fetch("/api/gold",{cache:"no-store"});
-  const d=await r.json();
+  try{
+    const r = await fetch("/api/gold",{cache:"no-store"});
+    const d = await r.json();
 
-  const buy=+d.buying_rate;
-  const sell=+d.selling_rate;
-  const t=new Date(d.updated_at.replace(" ","T")).getTime();
-  if(lastEventTime&&t<=lastEventTime) return;
-  lastEventTime=t;
+    const buy = Number(d.buying_rate);
+    const sell = Number(d.selling_rate);
+    const t = new Date(d.updated_at.replace(" ","T")).getTime();
 
-  history.push({t,p:buy});
-  if(history.length>30) history.shift();
+    if(lastEventTime && t <= lastEventTime) return;
+    lastEventTime = t;
 
-  buyEl.innerText=fmt(buy);
-  sellEl.innerText=fmt(sell);
-  spread.innerText="Spread: "+fmt(buy-sell);
-  updateProfit(buy,sell);
+    history.push({ t, p: buy });
+    if(history.length > 30) history.shift();
 
-  updateBias();
-  evaluate();
-  updateStats();
+    buyEl.textContent = fmt(buy);
+    sellEl.textContent = fmt(sell);
+    spreadEl.textContent = "Spread: " + fmt(buy - sell);
 
-  lastBuy=buy;lastSell=sell;
+    updateProfit(buy, sell);
+    updateBias();
+    evaluatePredictions();
+    updateStats();
+
+  }catch(e){
+    console.error("Fetch error:",e);
+  }
 }
+
 loadGold();
-setInterval(loadGold,1000);
+setInterval(loadGold, 1000);
 </script>
+
 </body>
 </html>
