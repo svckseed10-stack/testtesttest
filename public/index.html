@@ -6,26 +6,34 @@
 <title>Realtime Gold Price (WIB)</title>
 
 <style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ===== CENTER LAYOUT ===== */
 body{
   font-family:Arial,sans-serif;
   background:#111;
   color:#fff;
+  min-height:100vh;
   display:flex;
-  align-items:center;
   justify-content:center;
-  height:100vh;
-  margin:0
+  align-items:center;
 }
+
+/* ===== CARD ===== */
 .card{
   background:#1a1a1a;
-  padding:20px 24px;
+  padding:20px;
   border-radius:12px;
-  width:390px;
+  width:100%;
+  max-width:420px;
   box-shadow:0 8px 30px rgba(0,0,0,.6);
-  border:1px solid #222
+  border:1px solid #222;
+  text-align:center;
 }
-h1{text-align:center;font-size:18px;margin-bottom:6px}
-.time{text-align:center;color:#bbb;font-size:13px;margin-bottom:10px}
+
+h1{font-size:18px;margin-bottom:10px}
+.time{color:#bbb;font-size:13px;margin-bottom:12px}
+
 .row{margin:12px 0}
 .label{color:#aaa;font-size:13px}
 .value{font-size:22px;font-weight:700}
@@ -34,209 +42,150 @@ h1{text-align:center;font-size:18px;margin-bottom:6px}
 .green{color:#4caf50}
 .red{color:#ff6b6b}
 .neutral{color:#999}
+
 .fade{animation:pulse .25s ease-out}
 @keyframes pulse{
-  from{transform:scale(1.05);opacity:.3}
+  from{transform:scale(1.06);opacity:.2}
   to{transform:scale(1);opacity:1}
 }
 
-#spread{margin-top:12px;text-align:center;color:#f0e68c;font-weight:600}
-#profit,#profit2{margin-top:8px;text-align:center;font-weight:600}
-
-#bias{
+#spread,#profit,#profit2{
   margin-top:14px;
-  padding:10px;
-  border-radius:8px;
-  text-align:center;
-  font-weight:700
+  font-weight:600
 }
-.bias-up{background:#0f2e1a;color:#4caf50}
-.bias-down{background:#2e1414;color:#ff6b6b}
-.bias-neutral{background:#222;color:#aaa}
+#spread{color:#f0e68c}
 
-.small{font-size:12px;color:#bbb;text-align:center;margin-top:6px}
-
-button{
-  width:100%;
-  margin-top:10px;
-  padding:8px;
-  border-radius:6px;
-  border:none;
-  background:#333;
-  color:#ccc;
-  cursor:pointer
+.flash{animation:flash .5s ease-out}
+@keyframes flash{
+  0%{background-color:rgba(255,255,0,.2)}
+  50%{background-color:rgba(255,255,0,.5)}
+  100%{background-color:transparent}
 }
 </style>
 </head>
 
 <body>
-<div class="card">
 
-<h1>Realtime Gold Price</h1>
-<div id="time" class="time">--:--:--</div>
+<div class="card" id="goldCard">
+  <h1>Realtime Gold Price</h1>
+  <div id="time" class="time">--:--:-- | Last update: --:--:--</div>
 
-<div class="row">
-  <div class="label">Buying Rate</div>
-  <div id="buy" class="value">Loading...</div>
-  <div id="buyDiff" class="diff neutral">(0)</div>
-</div>
+  <div class="row">
+    <div class="label">Buying Rate</div>
+    <div id="buy" class="value">Loading...</div>
+    <div id="buyDiff" class="diff neutral">(0)</div>
+  </div>
 
-<div class="row">
-  <div class="label">Selling Rate</div>
-  <div id="sell" class="value">Loading...</div>
-  <div id="sellDiff" class="diff neutral">(0)</div>
-</div>
+  <div class="row">
+    <div class="label">Selling Rate</div>
+    <div id="sell" class="value">Loading...</div>
+    <div id="sellDiff" class="diff neutral">(0)</div>
+  </div>
 
-<div id="spread">Spread: -</div>
-<div id="profit">Profit 20jt: -</div>
-<div id="profit2">Profit 30jt: -</div>
-
-<div id="bias" class="bias-neutral">
-  5m Bias: UNCERTAIN
-  <div id="biasDetail" class="small"></div>
-</div>
-
-<div id="stats" class="small"></div>
-<button id="reset">Reset Prediction Data</button>
-
+  <div id="spread">Spread: -</div>
+  <div id="profit">Profit 20jt: -</div>
+  <div id="profit2">Profit 30jt: -</div>
 </div>
 
 <script>
-/* ================= DOM CACHE ================= */
-const buyEl = document.getElementById("buy");
-const sellEl = document.getElementById("sell");
-const buyDiffEl = document.getElementById("buyDiff");
-const sellDiffEl = document.getElementById("sellDiff");
-const spreadEl = document.getElementById("spread");
-const profitEl = document.getElementById("profit");
-const profit2El = document.getElementById("profit2");
-const biasEl = document.getElementById("bias");
-const statsEl = document.getElementById("stats");
-const timeEl = document.getElementById("time");
-const resetBtn = document.getElementById("reset");
-
 /* ================= PROFIT ================= */
-const nilaiEmas20=20000000, modal20=nilaiEmas20-685000;
-const nilaiEmas30=30000000, modal30=nilaiEmas30-1020000;
-const fmt=n=>n.toLocaleString("id-ID");
+const nilai20=20000000, modal20=nilai20-685000;
+const nilai30=30000000, modal30=nilai30-1020000;
 
-/* ================= CLOCK ================= */
-let offset=0;
+const fmt=n=>n.toLocaleString("id-ID");
+const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4});
+
+function hitung(sell,buy,nilai,modal){
+  const gram=nilai/buy;
+  const jual=gram*sell;
+  const profit=jual-modal;
+  return{profit,profitGram:profit/sell};
+}
+function updateProfit(sell,buy){
+  const a=hitung(sell,buy,nilai20,modal20);
+  const b=hitung(sell,buy,nilai30,modal30);
+  profit.innerHTML=`Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
+  profit2.innerHTML=`Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
+}
+
+/* ================= TIME SYNC ================= */
+let offset=0,lastTimestamp=null;
+
 async function syncTime(){
   try{
-    const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta",{cache:"no-store"});
     const d=await r.json();
-    offset=d.unixtime-Math.floor(Date.now()/1000);
-  }catch{}
-}
-function tick(){
-  const t=new Date((Math.floor(Date.now()/1000)+offset)*1000);
-  timeEl.innerText="Now WIB: "+t.toLocaleTimeString("id-ID",{hour12:false});
-}
-syncTime();setInterval(tick,1000);setInterval(syncTime,300000);
-
-/* ================= HISTORY ================= */
-const history=[];
-let lastEvent=null;
-
-/* ================= TREND ================= */
-const TH=500;
-function trend(min){
-  if(history.length<2)return"SIDE";
-  const now=history.at(-1).t;
-  const cut=now-min*60*1000;
-  const w=history.filter(e=>e.t>=cut);
-  if(w.length<2)return"SIDE";
-  const d=w.at(-1).p-w[0].p;
-  if(d>TH)return"UP";
-  if(d<-TH)return"DOWN";
-  return"SIDE";
+    offset=d.unixtime*1000-Date.now();  // Update offset based on current time difference
+  }catch{
+    console.error("Failed to sync time");
+  }
 }
 
-/* ================= STORAGE ================= */
-const KEY="gold_prediction_v1";
-let log=JSON.parse(localStorage.getItem(KEY)||"[]");
-log=log.filter(p=>Date.now()-p.t<86400000);
-localStorage.setItem(KEY,JSON.stringify(log));
+// Initial time sync and subsequent updates every 5 minutes
+syncTime();
+setInterval(syncTime, 300000);  // Sync time every 5 minutes
 
-/* ================= PREDICTION ================= */
-function record(bias,conf,price){
-  if(conf<60||bias==="UNCERTAIN")return;
-  if(log.at(-1)&&Date.now()-log.at(-1).t<60000)return;
-  log.push({t:Date.now(),price,bias,conf,resolved:false,result:null});
-  localStorage.setItem(KEY,JSON.stringify(log));
-}
-function resolve(price){
-  log.forEach(p=>{
-    if(p.resolved||Date.now()-p.t<300000)return;
-    p.result=p.bias==="HIGHER"?price>p.price?"WIN":"LOSS":price<p.price?"WIN":"LOSS";
-    p.resolved=true;
-  });
-  localStorage.setItem(KEY,JSON.stringify(log));
-}
-function stats(){
-  const d=log.filter(p=>p.resolved);
-  if(!d.length){statsEl.innerText="No resolved prediction";return}
-  const w=d.filter(p=>p.result==="WIN").length;
-  statsEl.innerText=`Predictions: ${d.length} · Win: ${w} · Win-rate: ${Math.round(w/d.length*100)}%`;
-}
+// Update the displayed time based on the current offset
+setInterval(()=>{
+  const now=new Date(Date.now()+offset);  // Adjust time based on the offset
+  time.innerText=
+    now.toLocaleTimeString("id-ID",{hour12:false})+
+    " | Last update: "+ 
+    (lastTimestamp?new Date(lastTimestamp).toLocaleTimeString("id-ID",{hour12:false}):"--:--:--");
+}, 1000);
 
-/* ================= LOAD GOLD ================= */
-let lastBuy=null,lastSell=null;
+/* ================= GOLD ================= */
+let lastBuy=null,lastSell=null,isFetching=false;
+
 async function loadGold(){
+  if(isFetching) return;
+  isFetching=true;
+
   try{
     const r=await fetch("/api/gold",{cache:"no-store"});
     const d=await r.json();
+    if(!d.updated_at) return;
 
-    const buy=+d.buying_rate;
-    const sell=+d.selling_rate;
-    const t=new Date(d.updated_at.replace(" ","T")).getTime();
-    if(lastEvent&&t<=lastEvent)return;
-    lastEvent=t;
+    const buyVal=+d.buying_rate;
+    const sellVal=+d.selling_rate;
+    const ts=new Date(d.updated_at.replace(" ","T")).getTime();
+    if(lastTimestamp && ts<=lastTimestamp) return;
+    lastTimestamp=ts;
 
-    history.push({t,p:buy});
-    if(history.length>30)history.shift();
-
-    buyEl.innerText=fmt(buy);
-    sellEl.innerText=fmt(sell);
-    spreadEl.innerText="Spread: "+fmt(buy-sell);
+    buy.className="value";
+    sell.className="value";
 
     if(lastBuy!==null){
-      buyDiffEl.innerHTML=buy>lastBuy?`<span class="green">⬆ +${fmt(buy-lastBuy)}</span>`:
-        buy<lastBuy?`<span class="red">⬇ ${fmt(buy-lastBuy)}</span>`:"(0)";
+      buy.classList.add(buyVal>lastBuy?"green":"red","fade");
+      buyDiff.innerHTML=buyVal-lastBuy
+        ?`<span class="${buyVal>lastBuy?"green":"red"}">${buyVal>lastBuy?"⬆":"⬇"} ${fmt(buyVal-lastBuy)}</span>`
+        :`<span class="neutral">(0)</span>`;
     }
 
-    const g20=nilaiEmas20/buy;
-    profitEl.innerText=`Profit 20jt: Rp ${fmt(g20*sell-modal20)}`;
+    if(lastSell!==null){
+      sell.classList.add(sellVal>lastSell?"green":"red","fade");
+      sellDiff.innerHTML=sellVal-lastSell
+        ?`<span class="${sellVal>lastSell?"green":"red"}">${sellVal>lastSell?"⬆":"⬇"} ${fmt(sellVal-lastSell)}</span>`
+        :`<span class="neutral">(0)</span>`;
+    }
 
-    const g30=nilaiEmas30/buy;
-    profit2El.innerText=`Profit 30jt: Rp ${fmt(g30*sell-modal30)}`;
+    buy.innerText=fmt(buyVal);
+    sell.innerText=fmt(sellVal);
+    spread.innerText="Spread: "+fmt(buyVal-sellVal);
+    updateProfit(sellVal,buyVal);
 
-    const t2=trend(2),t3=trend(3),t5=trend(5);
-    let bias="UNCERTAIN",cls="bias-neutral";
-    if(t2==="UP"&&t3==="UP"&&t5==="UP"){bias="HIGHER";cls="bias-up"}
-    if(t2==="DOWN"&&t3==="DOWN"&&t5==="DOWN"){bias="LOWER";cls="bias-down"}
+    time.classList.remove("flash"); void time.offsetWidth; time.classList.add("flash");
 
-    const conf=Math.round([t2,t3,t5].filter(x=>x!=="SIDE").length/3*100);
-    biasEl.className=cls;
-    biasEl.innerHTML=`5m Bias: ${bias}<div class="small">2m:${t2} · 3m:${t3} · 5m:${t5} · Confidence:${conf}%</div>`;
-
-    record(bias,conf,buy);
-    resolve(buy);
-    stats();
-
-    lastBuy=buy;lastSell=sell;
-  }catch(e){console.error(e)}
-}
-loadGold();setInterval(loadGold,1000);
-
-/* ================= RESET ================= */
-resetBtn.onclick=()=>{
-  if(confirm("Hapus semua data prediksi?")){
-    localStorage.removeItem(KEY);
-    location.reload();
+    lastBuy=buyVal;
+    lastSell=sellVal;
+  }finally{
+    isFetching=false;
   }
-};
+}
+
+/* ================= POLLING ================= */
+loadGold();
+setInterval(loadGold, 200);  // Update gold prices every 200ms
 </script>
 
 </body>
