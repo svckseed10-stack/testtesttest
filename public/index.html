@@ -35,9 +35,14 @@ h1{font-size:18px;margin-bottom:10px}
 .green{color:#4caf50}
 .red{color:#ff6b6b}
 .neutral{color:#999}
+.fade{animation:pulse .25s ease-out}
+@keyframes pulse{
+  from{transform:scale(1.06);opacity:.2}
+  to{transform:scale(1);opacity:1}
+}
 #spread,#profit,#profit2,#profit3,#profit4{
   margin-top:14px;
-  font-weight:600;
+  font-weight:600
 }
 #spread{color:#f0e68c}
 </style>
@@ -68,14 +73,14 @@ h1{font-size:18px;margin-bottom:10px}
 </div>
 
 <script>
-/* ===== MODAL (RUMUS ASLI) ===== */
-const nilai20=20000000, modal20=19315000;
-const nilai30=30000000, modal30=28980000;
-const nilai40=40000000, modal40=38652000;
-const nilai50=50000000, modal50=48325000;
+/* ================= PROFIT (LOGIC ASLI) ================= */
+const nilai20 = 20000000, modal20 = nilai20 - 685000;
+const nilai30 = 30000000, modal30 = nilai30 - 1020000;
+const nilai40 = 40000000, modal40 = nilai40 - 1348000;
+const nilai50 = 50000000, modal50 = nilai50 - 1675000;
 
-const fmt=n=>n.toLocaleString("id-ID");
-const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4});
+const fmt = n => n.toLocaleString("id-ID");
+const fmt4 = n => n.toLocaleString("id-ID",{minimumFractionDigits:4});
 
 function hitung(sell,buy,nilai,modal){
   const gram = nilai / buy;
@@ -85,10 +90,10 @@ function hitung(sell,buy,nilai,modal){
 }
 
 function updateProfit(sell,buy){
-  const a=hitung(sell,buy,nilai20,modal20);
-  const b=hitung(sell,buy,nilai30,modal30);
-  const c=hitung(sell,buy,nilai40,modal40);
-  const d=hitung(sell,buy,nilai50,modal50);
+  const a = hitung(sell,buy,nilai20,modal20);
+  const b = hitung(sell,buy,nilai30,modal30);
+  const c = hitung(sell,buy,nilai40,modal40);
+  const d = hitung(sell,buy,nilai50,modal50);
 
   profit.innerHTML  = `Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
   profit2.innerHTML = `Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
@@ -96,8 +101,8 @@ function updateProfit(sell,buy){
   profit4.innerHTML = `Profit 50jt: Rp ${fmt(d.profit)} (${fmt4(d.profitGram)} gr)`;
 }
 
-/* ===== SIMULASI DATA (ganti API kamu) ===== */
-function mockUpdate(){
+/* ===== SIMULASI DATA (GANTI API ASLI KAMU) ===== */
+function mock(){
   const buyVal = 1218000;
   const sellVal = 1215500;
 
@@ -105,11 +110,9 @@ function mockUpdate(){
   sell.innerText = fmt(sellVal);
   spread.innerText = "Spread: " + fmt(buyVal - sellVal);
   updateProfit(sellVal,buyVal);
-
   time.innerText = new Date().toLocaleTimeString("id-ID",{hour12:false});
 }
-
-mockUpdate();
+mock();
 </script>
 
 </body>
