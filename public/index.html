@@ -7,8 +7,6 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-
-/* ===== CENTER LAYOUT ===== */
 body{
   font-family:Arial,sans-serif;
   background:#111;
@@ -18,8 +16,6 @@ body{
   justify-content:center;
   align-items:center;
 }
-
-/* ===== CARD ===== */
 .card{
   background:#1a1a1a;
   padding:20px;
@@ -30,57 +26,37 @@ body{
   border:1px solid #222;
   text-align:center;
 }
-
 h1{font-size:18px;margin-bottom:10px}
 .time{color:#bbb;font-size:13px;margin-bottom:12px}
-
 .row{margin:12px 0}
 .label{color:#aaa;font-size:13px}
 .value{font-size:22px;font-weight:700}
 .diff{font-size:12px;margin-top:4px}
-
 .green{color:#4caf50}
 .red{color:#ff6b6b}
 .neutral{color:#999}
-
-.fade{animation:pulse .25s ease-out}
-@keyframes pulse{
-  from{transform:scale(1.06);opacity:.2}
-  to{transform:scale(1);opacity:1}
-}
-
 #spread,#profit,#profit2,#profit3,#profit4{
   margin-top:14px;
   font-weight:600;
 }
-
 #spread{color:#f0e68c}
-
-.flash{animation:flash .5s ease-out}
-@keyframes flash{
-  0%{background-color:rgba(255,255,0,.2)}
-  50%{background-color:rgba(255,255,0,.5)}
-  100%{background-color:transparent}
-}
 </style>
 </head>
 
 <body>
 
-<div class="card" id="goldCard">
+<div class="card">
   <h1>Realtime Gold Price</h1>
-  <div id="time" class="time">--:--:-- | Last update: --:--:--</div>
+  <div id="time" class="time">--:--:--</div>
 
   <div class="row">
     <div class="label">Buying Rate</div>
-    <div id="buy" class="value">Loading...</div>
-    <div id="buyDiff" class="diff neutral">(0)</div>
+    <div id="buy" class="value">-</div>
   </div>
 
   <div class="row">
     <div class="label">Selling Rate</div>
-    <div id="sell" class="value">Loading...</div>
-    <div id="sellDiff" class="diff neutral">(0)</div>
+    <div id="sell" class="value">-</div>
   </div>
 
   <div id="spread">Spread: -</div>
@@ -92,27 +68,27 @@ h1{font-size:18px;margin-bottom:10px}
 </div>
 
 <script>
-/* ================= PROFIT ================= */
-const nilai20 = 20000000;
-const nilai30 = 30000000;
-const nilai40 = 40000000;
-const nilai50 = 50000000;
+/* ===== MODAL (RUMUS ASLI) ===== */
+const nilai20=20000000, modal20=19315000;
+const nilai30=30000000, modal30=28980000;
+const nilai40=40000000, modal40=38652000;
+const nilai50=50000000, modal50=48325000;
 
-const fmt = n => n.toLocaleString("id-ID");
-const fmt4 = n => n.toLocaleString("id-ID",{minimumFractionDigits:4});
+const fmt=n=>n.toLocaleString("id-ID");
+const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4});
 
-function hitung(sell,buy,nilai){
+function hitung(sell,buy,nilai,modal){
   const gram = nilai / buy;
   const jual = gram * sell;
-  const profit = jual - nilai;
+  const profit = jual - modal;
   return { profit, profitGram: profit / sell };
 }
 
 function updateProfit(sell,buy){
-  const a = hitung(sell,buy,nilai20);
-  const b = hitung(sell,buy,nilai30);
-  const c = hitung(sell,buy,nilai40);
-  const d = hitung(sell,buy,nilai50);
+  const a=hitung(sell,buy,nilai20,modal20);
+  const b=hitung(sell,buy,nilai30,modal30);
+  const c=hitung(sell,buy,nilai40,modal40);
+  const d=hitung(sell,buy,nilai50,modal50);
 
   profit.innerHTML  = `Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
   profit2.innerHTML = `Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
@@ -120,85 +96,20 @@ function updateProfit(sell,buy){
   profit4.innerHTML = `Profit 50jt: Rp ${fmt(d.profit)} (${fmt4(d.profitGram)} gr)`;
 }
 
-/* ================= TIME SYNC ================= */
-let offset=0,lastTimestamp=null;
+/* ===== SIMULASI DATA (ganti API kamu) ===== */
+function mockUpdate(){
+  const buyVal = 1218000;
+  const sellVal = 1215500;
 
-async function syncTime(){
-  try{
-    const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta",{cache:"no-store"});
-    const d=await r.json();
-    offset=d.unixtime*1000-Date.now();
-  }catch{
-    console.error("Failed to sync time");
-  }
+  buy.innerText = fmt(buyVal);
+  sell.innerText = fmt(sellVal);
+  spread.innerText = "Spread: " + fmt(buyVal - sellVal);
+  updateProfit(sellVal,buyVal);
+
+  time.innerText = new Date().toLocaleTimeString("id-ID",{hour12:false});
 }
 
-syncTime();
-setInterval(syncTime,300000);
-
-setInterval(()=>{
-  const now=new Date(Date.now()+offset);
-  time.innerText=
-    now.toLocaleTimeString("id-ID",{hour12:false})+
-    " | Last update: "+
-    (lastTimestamp?new Date(lastTimestamp).toLocaleTimeString("id-ID",{hour12:false}):"--:--:--");
-},1000);
-
-/* ================= GOLD ================= */
-let lastBuy=null,lastSell=null,isFetching=false;
-
-async function loadGold(){
-  if(isFetching) return;
-  isFetching=true;
-
-  try{
-    const r=await fetch("/api/gold",{cache:"no-store"});
-    const d=await r.json();
-    if(!d.updated_at) return;
-
-    const buyVal=+d.buying_rate;
-    const sellVal=+d.selling_rate;
-    const ts=new Date(d.updated_at.replace(" ","T")).getTime();
-    if(lastTimestamp && ts<=lastTimestamp) return;
-    lastTimestamp=ts;
-
-    buy.className="value";
-    sell.className="value";
-
-    if(lastBuy!==null){
-      buy.classList.add(buyVal>lastBuy?"green":"red","fade");
-      buyDiff.innerHTML=buyVal-lastBuy
-        ?`<span class="${buyVal>lastBuy?"green":"red"}">${buyVal>lastBuy?"⬆":"⬇"} ${fmt(buyVal-lastBuy)}</span>`
-        :`<span class="neutral">(0)</span>`;
-    }
-
-    if(lastSell!==null){
-      sell.classList.add(sellVal>lastSell?"green":"red","fade");
-      sellDiff.innerHTML=sellVal-lastSell
-        ?`<span class="${sellVal>lastSell?"green":"red"}">${sellVal>lastSell?"⬆":"⬇"} ${fmt(sellVal-lastSell)}</span>`
-        :`<span class="neutral">(0)</span>`;
-    }
-
-    buy.innerText=fmt(buyVal);
-    sell.innerText=fmt(sellVal);
-    spread.innerText="Spread: "+fmt(buyVal-sellVal);
-
-    updateProfit(sellVal,buyVal);
-
-    time.classList.remove("flash");
-    void time.offsetWidth;
-    time.classList.add("flash");
-
-    lastBuy=buyVal;
-    lastSell=sellVal;
-  }finally{
-    isFetching=false;
-  }
-}
-
-/* ================= POLLING ================= */
-loadGold();
-setInterval(loadGold,200);
+mockUpdate();
 </script>
 
 </body>
