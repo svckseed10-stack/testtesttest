@@ -49,10 +49,11 @@ h1{font-size:18px;margin-bottom:10px}
   to{transform:scale(1);opacity:1}
 }
 
-#spread,#profit,#profit2{
+#spread,#profit,#profit2,#profit3,#profit4{
   margin-top:14px;
-  font-weight:600
+  font-weight:600;
 }
+
 #spread{color:#f0e68c}
 
 .flash{animation:flash .5s ease-out}
@@ -83,29 +84,40 @@ h1{font-size:18px;margin-bottom:10px}
   </div>
 
   <div id="spread">Spread: -</div>
+
   <div id="profit">Profit 20jt: -</div>
   <div id="profit2">Profit 30jt: -</div>
+  <div id="profit3">Profit 40jt: -</div>
+  <div id="profit4">Profit 50jt: -</div>
 </div>
 
 <script>
 /* ================= PROFIT ================= */
-const nilai20=20000000, modal20=nilai20-685000;
-const nilai30=30000000, modal30=nilai30-1020000;
+const nilai20 = 20000000;
+const nilai30 = 30000000;
+const nilai40 = 40000000;
+const nilai50 = 50000000;
 
-const fmt=n=>n.toLocaleString("id-ID");
-const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4});
+const fmt = n => n.toLocaleString("id-ID");
+const fmt4 = n => n.toLocaleString("id-ID",{minimumFractionDigits:4});
 
-function hitung(sell,buy,nilai,modal){
-  const gram=nilai/buy;
-  const jual=gram*sell;
-  const profit=jual-modal;
-  return{profit,profitGram:profit/sell};
+function hitung(sell,buy,nilai){
+  const gram = nilai / buy;
+  const jual = gram * sell;
+  const profit = jual - nilai;
+  return { profit, profitGram: profit / sell };
 }
+
 function updateProfit(sell,buy){
-  const a=hitung(sell,buy,nilai20,modal20);
-  const b=hitung(sell,buy,nilai30,modal30);
-  profit.innerHTML=`Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
-  profit2.innerHTML=`Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
+  const a = hitung(sell,buy,nilai20);
+  const b = hitung(sell,buy,nilai30);
+  const c = hitung(sell,buy,nilai40);
+  const d = hitung(sell,buy,nilai50);
+
+  profit.innerHTML  = `Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
+  profit2.innerHTML = `Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
+  profit3.innerHTML = `Profit 40jt: Rp ${fmt(c.profit)} (${fmt4(c.profitGram)} gr)`;
+  profit4.innerHTML = `Profit 50jt: Rp ${fmt(d.profit)} (${fmt4(d.profitGram)} gr)`;
 }
 
 /* ================= TIME SYNC ================= */
@@ -115,24 +127,22 @@ async function syncTime(){
   try{
     const r=await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta",{cache:"no-store"});
     const d=await r.json();
-    offset=d.unixtime*1000-Date.now();  // Update offset based on current time difference
+    offset=d.unixtime*1000-Date.now();
   }catch{
     console.error("Failed to sync time");
   }
 }
 
-// Initial time sync and subsequent updates every 5 minutes
 syncTime();
-setInterval(syncTime, 300000);  // Sync time every 5 minutes
+setInterval(syncTime,300000);
 
-// Update the displayed time based on the current offset
 setInterval(()=>{
-  const now=new Date(Date.now()+offset);  // Adjust time based on the offset
+  const now=new Date(Date.now()+offset);
   time.innerText=
     now.toLocaleTimeString("id-ID",{hour12:false})+
-    " | Last update: "+ 
+    " | Last update: "+
     (lastTimestamp?new Date(lastTimestamp).toLocaleTimeString("id-ID",{hour12:false}):"--:--:--");
-}, 1000);
+},1000);
 
 /* ================= GOLD ================= */
 let lastBuy=null,lastSell=null,isFetching=false;
@@ -172,9 +182,12 @@ async function loadGold(){
     buy.innerText=fmt(buyVal);
     sell.innerText=fmt(sellVal);
     spread.innerText="Spread: "+fmt(buyVal-sellVal);
+
     updateProfit(sellVal,buyVal);
 
-    time.classList.remove("flash"); void time.offsetWidth; time.classList.add("flash");
+    time.classList.remove("flash");
+    void time.offsetWidth;
+    time.classList.add("flash");
 
     lastBuy=buyVal;
     lastSell=sellVal;
@@ -185,7 +198,7 @@ async function loadGold(){
 
 /* ================= POLLING ================= */
 loadGold();
-setInterval(loadGold, 200);  // Update gold prices every 200ms
+setInterval(loadGold,200);
 </script>
 
 </body>
