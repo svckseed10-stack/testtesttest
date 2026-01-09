@@ -7,6 +7,7 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
 body{
   font-family:Arial,sans-serif;
   background:#111;
@@ -16,6 +17,7 @@ body{
   justify-content:center;
   align-items:center;
 }
+
 .card{
   background:#1a1a1a;
   padding:20px;
@@ -26,25 +28,31 @@ body{
   border:1px solid #222;
   text-align:center;
 }
+
 h1{font-size:18px;margin-bottom:10px}
 .time{color:#bbb;font-size:13px;margin-bottom:12px}
+
 .row{margin:12px 0}
 .label{color:#aaa;font-size:13px}
 .value{font-size:22px;font-weight:700}
 .diff{font-size:12px;margin-top:4px}
+
 .green{color:#4caf50}
 .red{color:#ff6b6b}
 .neutral{color:#999}
+
 .fade{animation:pulse .25s ease-out}
 @keyframes pulse{
   from{transform:scale(1.06);opacity:.2}
   to{transform:scale(1);opacity:1}
 }
+
 #spread,#profit,#profit2,#profit3,#profit4{
   margin-top:14px;
   font-weight:600
 }
 #spread{color:#f0e68c}
+
 .flash{animation:flash .5s ease-out}
 @keyframes flash{
   0%{background-color:rgba(255,255,0,.2)}
@@ -73,7 +81,6 @@ h1{font-size:18px;margin-bottom:10px}
   </div>
 
   <div id="spread">Spread: -</div>
-
   <div id="profit">Profit 20jt: -</div>
   <div id="profit2">Profit 30jt: -</div>
   <div id="profit3">Profit 40jt: -</div>
@@ -82,33 +89,31 @@ h1{font-size:18px;margin-bottom:10px}
 
 <script>
 /* ================= PROFIT ================= */
-const nilai20=20000000, modal20=nilai20-685000;
-const nilai30=30000000, modal30=nilai30-1020000;
+const nilai20 = 20000000, modal20 = nilai20 - 685000;
+const nilai30 = 30000000, modal30 = nilai30 - 1020000;
+const nilai40 = 40000000, modal40 = nilai40 - 1348000;
+const nilai50 = 50000000, modal50 = nilai50 - 1675000;
 
-/* MODAL BARU (TAMBAHAN SAJA) */
-const nilai40=40000000, modal40=38652000;
-const nilai50=50000000, modal50=48325000;
-
-const fmt=n=>n.toLocaleString("id-ID");
-const fmt4=n=>n.toLocaleString("id-ID",{minimumFractionDigits:4});
+const fmt  = n => n.toLocaleString("id-ID");
+const fmt4 = n => n.toLocaleString("id-ID",{minimumFractionDigits:4});
 
 function hitung(sell,buy,nilai,modal){
-  const gram=nilai/buy;
-  const jual=gram*sell;
-  const profit=jual-modal;
-  return{profit,profitGram:profit/sell};
+  const gram = nilai / buy;
+  const jual = gram * sell;
+  const profit = jual - modal;
+  return { profit, profitGram: profit / sell };
 }
 
 function updateProfit(sell,buy){
-  const a=hitung(sell,buy,nilai20,modal20);
-  const b=hitung(sell,buy,nilai30,modal30);
-  const c=hitung(sell,buy,nilai40,modal40);
-  const d=hitung(sell,buy,nilai50,modal50);
+  const a = hitung(sell,buy,nilai20,modal20);
+  const b = hitung(sell,buy,nilai30,modal30);
+  const c = hitung(sell,buy,nilai40,modal40);
+  const d = hitung(sell,buy,nilai50,modal50);
 
-  profit.innerHTML  =`Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
-  profit2.innerHTML =`Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
-  profit3.innerHTML =`Profit 40jt: Rp ${fmt(c.profit)} (${fmt4(c.profitGram)} gr)`;
-  profit4.innerHTML =`Profit 50jt: Rp ${fmt(d.profit)} (${fmt4(d.profitGram)} gr)`;
+  profit.innerHTML  = `Profit 20jt: Rp ${fmt(a.profit)} (${fmt4(a.profitGram)} gr)`;
+  profit2.innerHTML = `Profit 30jt: Rp ${fmt(b.profit)} (${fmt4(b.profitGram)} gr)`;
+  profit3.innerHTML = `Profit 40jt: Rp ${fmt(c.profit)} (${fmt4(c.profitGram)} gr)`;
+  profit4.innerHTML = `Profit 50jt: Rp ${fmt(d.profit)} (${fmt4(d.profitGram)} gr)`;
 }
 
 /* ================= TIME SYNC ================= */
@@ -121,6 +126,7 @@ async function syncTime(){
     offset=d.unixtime*1000-Date.now();
   }catch{}
 }
+
 syncTime();
 setInterval(syncTime,300000);
 
@@ -138,6 +144,7 @@ let lastBuy=null,lastSell=null,isFetching=false;
 async function loadGold(){
   if(isFetching) return;
   isFetching=true;
+
   try{
     const r=await fetch("/api/gold",{cache:"no-store"});
     const d=await r.json();
